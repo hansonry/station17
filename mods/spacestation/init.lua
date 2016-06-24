@@ -50,3 +50,24 @@ minetest.register_node("spacestation:light", {
 	sounds = default.node_sound_defaults(),
 })
 
+minetest.register_node("spacestation:door", {
+	description = "Space Station Interal Door",
+	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
+	--inventory_image = "spacestation_door.png",	
+	groups = {cracky=3},
+	drop = 'spacestation:door',
+	drawtype = "mesh",
+	paramtype = "light",
+	paramtype2 = "facedir",
+	sunlight_propagates = true,
+	use_texture_alpha = true,
+	walkable = true,
+	is_ground_content = false,
+	buildable_to = false,
+	selection_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
+	collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
+	mesh = "door_c.obj",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+
