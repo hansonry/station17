@@ -68,6 +68,12 @@ minetest.register_node("spacestation:door", {
 	collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_d.obj",
 	sounds = default.node_sound_stone_defaults(),
+   on_rightclick = function(pos, node, clicker)
+      minetest.swap_node(pos, { 
+         name = "spacestation:door_open", 
+         param1 = node.param1, param2 = node.param2
+         })
+   end,
 })
 
 minetest.register_node("spacestation:door_open", {
@@ -88,5 +94,11 @@ minetest.register_node("spacestation:door_open", {
 	--collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_d_open.obj",
 	sounds = default.node_sound_stone_defaults(),
+   on_rightclick = function(pos, node, clicker)
+      minetest.swap_node(pos, { 
+         name = "spacestation:door", 
+         param1 = node.param1, param2 = node.param2
+         })
+   end,
 })
 
