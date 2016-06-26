@@ -50,6 +50,75 @@ minetest.register_node("spacestation:light", {
 	sounds = default.node_sound_defaults(),
 })
 
+function doortoggle(pos, node, clicker)
+   local newname
+   if node.name == "spacestation:door_open" then
+      newname = "spacestation:door"
+   else
+      newname = "spacestation:door_open"
+   end
+   minetest.swap_node(pos, { 
+      name = newname, 
+      param1 = node.param1, 
+      param2 = node.param2
+      })
+   -- param2 should be facing dir
+   -- 0 = z; 1 = x; 2 = -z; 3 = -x
+   if node.param2 == 0 then
+      local newpos = { x = pos.x - 1, y = pos.y, z = pos.z }
+      local checknode = minetest.get_node(newpos)
+      if (checknode.name == "spacestation:door" or 
+          checknode.name == "spacestation:door_open") and
+         checknode.param2 == 2 then
+         minetest.swap_node(newpos, { 
+            name = newname, 
+            param1 = checknode.param1, 
+            param2 = checknode.param2
+            })
+      end
+   elseif node.param2 == 1 then
+      local newpos = { x = pos.x, y = pos.y, z = pos.z + 1 }
+      local checknode = minetest.get_node(newpos)
+      if (checknode.name == "spacestation:door" or 
+          checknode.name == "spacestation:door_open") and
+         checknode.param2 == 3 then
+         minetest.swap_node(newpos, { 
+            name = newname, 
+            param1 = checknode.param1, 
+            param2 = checknode.param2
+            })
+      end
+   elseif node.param2 == 2 then
+      local newpos = { x = pos.x + 1, y = pos.y, z = pos.z }
+      local checknode = minetest.get_node(newpos)
+      if (checknode.name == "spacestation:door" or 
+          checknode.name == "spacestation:door_open") and
+         checknode.param2 == 0 then
+         minetest.swap_node(newpos, { 
+            name = newname, 
+            param1 = checknode.param1, 
+            param2 = checknode.param2
+            })
+      end
+   elseif node.param2 == 3 then
+      local newpos = { x = pos.x, y = pos.y, z = pos.z - 1 }
+      local checknode = minetest.get_node(newpos)
+      if (checknode.name == "spacestation:door" or 
+          checknode.name == "spacestation:door_open") and
+         checknode.param2 == 1 then
+         minetest.swap_node(newpos, { 
+            name = newname, 
+            param1 = checknode.param1, 
+            param2 = checknode.param2
+            })
+      end
+   end
+
+
+
+end
+
+
 minetest.register_node("spacestation:door", {
 	description = "Space Station Interal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
@@ -66,14 +135,9 @@ minetest.register_node("spacestation:door", {
 	buildable_to = false,
 	selection_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
-	mesh = "door_d.obj",
+	mesh = "door_c.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = function(pos, node, clicker)
-      minetest.swap_node(pos, { 
-         name = "spacestation:door_open", 
-         param1 = node.param1, param2 = node.param2
-         })
-   end,
+   on_rightclick = doortoggle,
 })
 
 minetest.register_node("spacestation:door_open", {
@@ -92,13 +156,8 @@ minetest.register_node("spacestation:door_open", {
 	buildable_to = false,
 	selection_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	--collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
-	mesh = "door_d_open.obj",
+	mesh = "door_c_open.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = function(pos, node, clicker)
-      minetest.swap_node(pos, { 
-         name = "spacestation:door", 
-         param1 = node.param1, param2 = node.param2
-         })
-   end,
+   on_rightclick = doortoggle,
 })
 
