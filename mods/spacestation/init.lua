@@ -175,4 +175,20 @@ minetest.register_node("spacestation:locker", {
 	groups = {cracky=3},
 	drop = 'spacestation:locker',
 	sounds = default.node_sound_stone_defaults(),
+   on_construct = function(pos)
+      local meta = minetest.get_meta(pos)
+      meta:set_string("formspec",
+         "size[8,9]"..
+         "list[current_name;main;0,0;4,1;]"..
+         "list[current_player;main;0,5;8,4;]"..
+         "listring[]")
+      meta:set_string("infotext", "Locker")
+      local inv = meta:get_inventory()
+      inv:set_size("main", 4 * 1)
+   end,
+   can_dig = function(pos, player)
+      local meta = minetest.get_meta(pos)
+      local inv = meta:get_inventory()
+      return inv:is_empty("main")
+   end,
 })
