@@ -192,3 +192,10 @@ minetest.register_node("spacestation:locker", {
       return inv:is_empty("main")
    end,
 })
+
+minetest.register_craftitem("spacestation:idcard", {
+   description = "ID",
+   inventory_image = "spacestation_idcard.png",
+})
+
+
