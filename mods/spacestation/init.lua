@@ -161,3 +161,18 @@ minetest.register_node("spacestation:door_open", {
    on_rightclick = doortoggle,
 })
 
+minetest.register_node("spacestation:locker", {
+	description = "Space Station Locker",
+	tiles = { 
+      "spacestation_locker_top.png",  
+      "spacestation_locker_top.png",  
+      "spacestation_locker_side.png",  
+      "spacestation_locker_side.png",  
+      "spacestation_locker_top.png",  
+      "spacestation_locker_front.png",  
+      },
+	paramtype2 = "facedir",
+	groups = {cracky=3},
+	drop = 'spacestation:locker',
+	sounds = default.node_sound_stone_defaults(),
+})
