@@ -172,6 +172,7 @@ minetest.register_node("spacestation:locker", {
 minetest.register_craftitem("spacestation:idcard", {
    description = "ID",
    inventory_image = "spacestation_idcard.png",
+   stack_max = 1,
 })
 
 
