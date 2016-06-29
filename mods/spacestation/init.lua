@@ -175,4 +175,9 @@ minetest.register_craftitem("spacestation:idcard", {
    stack_max = 1,
 })
 
+minetest.register_craftitem("spacestation:programmer", {
+   description = "Programmer",
+   inventory_image = "spacestation_programmer.png",
+   stack_max = 1,
+})
 
