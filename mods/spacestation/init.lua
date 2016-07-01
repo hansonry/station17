@@ -205,31 +205,20 @@ minetest.register_craftitem("spacestation:programmer", {
    stack_max = 1,
 })
 
--- Player Join
 
-minetest.register_on_joinplayer(function(player)
-   local inv = player:get_inventory()
-   -- Remove All Id cards
-   local stack = ItemStack("spacestation:idcard")
-   while inv:contains_item("main", stack) do
-      inv:remove_item("main", stack)
-   end
-   -- Check to see if there are any other players
-   local playerlist = minetest.get_connected_players()
-   if table.getn(playerlist) == 1 then
-      -- If not, then give this player the captain card
-      local card_data = {
-         door_access = { "captan" },
-         enabled = true
-      }
-      local stack = ItemStack({
-         name = "spacestation:idcard", 
-         count = 1, 
-         metadata = minetest.serialize(card_data)
-      })
-      inv:add_item("main", stack)
-   end
-end)
-
-
+minetest.register_node("spacestation:computer_idcard", {
+	description = "ID Card Computer",
+	tiles = {{ name = "spacestation_computer_idcard.png", backface_culling = true }},
+	groups = {cracky=3},
+	drop = 'spacestation:computer_idcard',
+	drawtype = "mesh",
+	paramtype = "light",
+	paramtype2 = "facedir",
+	sunlight_propagates = true,
+	walkable = true,
+	is_ground_content = false,
+	buildable_to = false,
+	mesh = "spacestation_computer.obj",
+	sounds = default.node_sound_stone_defaults(),
+})
 
