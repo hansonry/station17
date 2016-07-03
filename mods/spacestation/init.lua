@@ -220,5 +220,106 @@ minetest.register_node("spacestation:computer_idcard", {
 	buildable_to = false,
 	mesh = "spacestation_computer.obj",
 	sounds = default.node_sound_stone_defaults(),
+   on_construct = function(pos)
+      local meta = minetest.get_meta(pos)
+      
+      meta:set_string("formspec",
+         "size[8,9]"..
+         "list[current_name;input;0,1;1,1;]"..
+         "list[current_player;main;0,5;8,4;]"..
+         "listring[]")
+      
+      meta:set_string("infotext", "ID Computer")
+      local inv = meta:get_inventory()
+      inv:set_size("input", 1)
+   end,
+   on_metadata_inventory_put = function(pos, listname, index, stack2, player)
+      local meta = minetest.get_meta(pos)
+      local inv = meta:get_inventory()
+      local stack = inv:get_stack("input", 1)
+      local item_meta_str = stack:get_metadata()
+      if item_meta_str == "" then
+         local new_card_meta = {
+            active = false,
+            access = {},
+         }
+         stack:set_metadata(minetest.serialize(new_card_meta))
+      end
+      local item_meta = minetest.deserialize(stack:get_metadata())
+
+      -- Build list string
+      local perm_list = table.concat(item_meta.access, ",")
+
+       
+
+      local spec = "size[8,9]"..
+                   "list[current_name;input;0,1;1,1;]"..
+                   "tablecolumns[text]"..
+                   "table[1,0;4,3;spacestation:computer_idcard_table;" .. perm_list .. ";1]"..
+                   "button[5,1;3,1;spacestation:computer_idcard_button;Remove]"..
+                   "field[1,4;4,1;spacestation:computer_idcard_text;New Permission;]"..
+                   "button[5,4;2,1;spacestation:computer_idcard_button;Add]"..
+                   "list[current_player;main;0,5;8,4;]"..
+                   "listring[]"
+      meta:set_string("formspec", spec)
+      
+   end,
+   on_receive_fields = function(pos, formname, fields, sender)
+      local meta = minetest.get_meta(pos)
+      local inv = meta:get_inventory()
+      local stack = inv:get_stack("input", 1)
+      local item_meta_str = stack:get_metadata()
+      local item_meta
+      print(dump(fields))
+      if item_meta_str == "" then
+         item_meta = {
+            active = false,
+            access = {},
+         }
+      else
+         item_meta = minetest.deserialize(item_meta_str)
+      end
+
+      if fields["spacestation:computer_idcard_button"] == "Add" then
+         local perm_name = fields["spacestation:computer_idcard_text"]
+         if perm_name ~= "" then
+            table.insert(item_meta.access, perm_name)
+         end
+      elseif fields["spacestation:computer_idcard_button"] == "Remove" then
+      elseif fields["spacestation:computer_idcard_table"] ~= nil then
+         print("Table Change")
+      end
+      print(minetest.serialize(item_meta))
+      stack:set_metadata(minetest.serialize(item_meta))
+      inv:set_stack("input", 1, stack)
+
+      -- Build list string
+      local perm_list = table.concat(item_meta.access, ",")
+
+       
+
+      local spec = "size[8,9]"..
+                   "list[current_name;input;0,1;1,1;]"..
+                   "tablecolumns[text]"..
+                   "table[1,0;4,3;spacestation:computer_idcard_table;" .. perm_list .. ";1]"..
+                   "button[5,1;3,1;spacestation:computer_idcard_button;Remove]"..
+                   "field[1,4;4,1;spacestation:computer_idcard_text;New Permission;]"..
+                   "button[5,4;2,1;spacestation:computer_idcard_button;Add]"..
+                   "list[current_player;main;0,5;8,4;]"..
+                   "listring[]"
+      meta:set_string("formspec", spec)
+
+   end,
+   --[[
+   on_rightclick = function(pos, self, clicker, itemstack)
+      
+      local spec = "size[8,9]"..
+                   "list[current_name;input;0;0;1;1]"..
+                   "
+      minetest.show_formspec(clicker:get_player_name(), "spacestation:computer_idcard", spec)
+      
+      return itemstack
+   end
+   --]]
 })
 
