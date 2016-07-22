@@ -203,6 +203,10 @@ minetest.register_craftitem("spacestation:programmer", {
    description = "Programmer",
    inventory_image = "spacestation_programmer.png",
    stack_max = 1,
+   on_use = function(itemstack, user, pointed_thing)
+      print(dump(pointed_thing))
+      return nil
+   end,
 })
 
 btn_text_add = "Add"
@@ -306,7 +310,7 @@ minetest.register_node("spacestation:computer_idcard", {
 
       local item_meta_str = stack:get_metadata()
       local item_meta
-      print(dump(fields))
+      --print(dump(fields))
       if item_meta_str == "" then
          item_meta = {
             active = false,
@@ -355,7 +359,7 @@ minetest.register_node("spacestation:computer_idcard", {
             item_meta.active = false
          end
       end
-      print(minetest.serialize(item_meta))
+      --print(minetest.serialize(item_meta))
       stack:set_metadata(minetest.serialize(item_meta))
       inv:set_stack("input", 1, stack)
 
