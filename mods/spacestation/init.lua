@@ -204,10 +204,27 @@ minetest.register_craftitem("spacestation:programmer", {
    inventory_image = "spacestation_programmer.png",
    stack_max = 1,
    on_use = function(itemstack, user, pointed_thing)
-      print(dump(pointed_thing))
+      --print(dump(pointed_thing))
+      local form = 
+         "size[4,2]"..
+         "field[0,0;4,1;spacestation:programmer_text;Permission;test]"..
+         "button[0,1;4,1;spacestation:programmer_button;Program]"
+
+      print(user:get_player_name())
+      minetest.show_formspec(user:get_player_name(), "spacestation:programmer", form)
       return nil
    end,
 })
+
+minetest.register_on_player_receive_fields(function(player, formname, fields)
+   -- TODO: This isn't working how I want it to for some reason
+   print("Test")
+   --if formname == "spacestation:programmer" then
+      print("HI ".. formname)
+      print(dump(fields))
+   --end
+   return true
+end)
 
 btn_text_add = "Add"
 btn_text_remove = "Remove"
