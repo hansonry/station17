@@ -199,6 +199,7 @@ minetest.register_craftitem("spacestation:idcard", {
    stack_max = 1,
 })
 
+
 minetest.register_craftitem("spacestation:programmer", {
    description = "Programmer",
    inventory_image = "spacestation_programmer.png",
@@ -212,19 +213,17 @@ minetest.register_craftitem("spacestation:programmer", {
 
       print(user:get_player_name())
       minetest.show_formspec(user:get_player_name(), "spacestation:programmer", form)
+      minetest.register_on_player_receive_fields(function(player, formname, fields)
+         if formname ~= "spacestation:programmer" then
+            return false
+         end
+         print(dump(fields))
+         return true
+      end)
       return nil
    end,
 })
 
-minetest.register_on_player_receive_fields(function(player, formname, fields)
-   -- TODO: This isn't working how I want it to for some reason
-   print("Test")
-   --if formname == "spacestation:programmer" then
-      print("HI ".. formname)
-      print(dump(fields))
-   --end
-   return true
-end)
 
 btn_text_add = "Add"
 btn_text_remove = "Remove"
