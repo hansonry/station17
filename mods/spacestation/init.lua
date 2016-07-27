@@ -123,7 +123,7 @@ minetest.register_node("spacestation:door", {
 	description = "Space Station Interal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
 	--inventory_image = "spacestation_door.png",	
-	groups = {cracky=3},
+	groups = {cracky=3, access=1},
 	drop = 'spacestation:door',
 	drawtype = "mesh",
 	paramtype = "light",
@@ -144,7 +144,7 @@ minetest.register_node("spacestation:door_open", {
 	description = "Space Station Interal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
 	--inventory_image = "spacestation_door.png",	
-	groups = {cracky=3},
+	groups = {cracky=3, access=1},
 	drop = 'spacestation:door',
 	drawtype = "mesh",
 	paramtype = "light",
@@ -206,20 +206,36 @@ minetest.register_craftitem("spacestation:programmer", {
    stack_max = 1,
    on_use = function(itemstack, user, pointed_thing)
       --print(dump(pointed_thing))
-      local form = 
-         "size[4,2]"..
-         "field[0,0;4,1;spacestation:programmer_text;Permission;test]"..
-         "button[0,1;4,1;spacestation:programmer_button;Program]"
+      local node_name = minetest.get_node(pointed_thing.under).name
+      --print(node_name)
+      local access_group = minetest.get_item_group(node_name, "access")
+      if access_group >= 1 then
 
-      print(user:get_player_name())
-      minetest.show_formspec(user:get_player_name(), "spacestation:programmer", form)
-      minetest.register_on_player_receive_fields(function(player, formname, fields)
-         if formname ~= "spacestation:programmer" then
-            return false
+         local meta = minetest.get_meta(pointed_thing.under)
+         local lock_var = meta:get_string("lock")
+         
+         print(lock_var)
+         if lock_var == nil then
+            lock_var = ""
          end
-         print(dump(fields))
-         return true
-      end)
+
+         local form = 
+            "size[4,2]" ..
+            "field[0,0;4,1;spacestation:programmer_text;Permission;" .. lock_var .. "]" ..
+            "button_exit[0,1;4,1;spacestation:programmer_button;Program]"
+
+         --print(user:get_player_name())
+         minetest.show_formspec(user:get_player_name(), "spacestation:programmer", form)
+         minetest.register_on_player_receive_fields(function(player, formname, fields)
+            if formname ~= "spacestation:programmer" then
+               return false
+            end
+            --print(dump(fields))
+            meta:set_string("lock", fields["spacestation:programmer_text"])
+
+            return true
+         end)
+      end
       return nil
    end,
 })
@@ -259,7 +275,7 @@ end
 minetest.register_node("spacestation:computer_idcard", {
 	description = "ID Card Computer",
 	tiles = {{ name = "spacestation_computer_idcard.png", backface_culling = true }},
-	groups = {cracky=3},
+	groups = {cracky=3, access=1},
 	drop = 'spacestation:computer_idcard',
 	drawtype = "mesh",
 	paramtype = "light",
