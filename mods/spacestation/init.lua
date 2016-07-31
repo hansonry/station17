@@ -50,6 +50,45 @@ minetest.register_node("spacestation:light", {
 	sounds = default.node_sound_defaults(),
 })
 
+function doorclick(pos, node, clicker)
+   -- Is door access locked
+   local meta = minetest.get_meta(pos)
+   local lock_var = meta:get_string("lock")
+   local can_open
+   -- print(dump(lock_var))
+   if lock_var == nil  or lock_var == "" then
+      can_open = true
+   else
+      local wielded_stack = clicker:get_wielded_item()
+      local metadata = wielded_stack:get_metadata()
+      print("Meta: " .. metadata)
+      if metadata == nil or metadata == "" then
+         can_open = false
+      else
+         local item_meta = minetest.deserialize(metadata)
+            --active = false,
+            --access = {},
+         if item_meta.active then
+            can_open = false
+            for _,v in ipairs(item_meta.access) do
+               if v == lock_var then
+                  can_open = true
+                  break
+               end
+            end
+         else
+            can_open = false
+         end
+
+      end
+   end
+
+   if can_open then
+      doortoggle(pos, node, clicker)
+   end
+
+end
+
 function doortoggle(pos, node, clicker)
    local newname
    if node.name == "spacestation:door_open" then
@@ -137,7 +176,7 @@ minetest.register_node("spacestation:door", {
 	collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_c.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = doortoggle,
+   on_rightclick = doorclick,
 })
 
 minetest.register_node("spacestation:door_open", {
@@ -214,7 +253,7 @@ minetest.register_craftitem("spacestation:programmer", {
          local meta = minetest.get_meta(pointed_thing.under)
          local lock_var = meta:get_string("lock")
          
-         print(lock_var)
+         --print(lock_var)
          if lock_var == nil then
             lock_var = ""
          end
@@ -231,7 +270,10 @@ minetest.register_craftitem("spacestation:programmer", {
                return false
             end
             --print(dump(fields))
-            meta:set_string("lock", fields["spacestation:programmer_text"])
+            -- If you press esc you only get the exit field
+            if fields["spacestation:programmer_text"] ~= nil then
+               meta:set_string("lock", fields["spacestation:programmer_text"])
+            end
 
             return true
          end)
