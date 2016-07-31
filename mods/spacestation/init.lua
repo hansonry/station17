@@ -61,7 +61,7 @@ function doorclick(pos, node, clicker)
    else
       local wielded_stack = clicker:get_wielded_item()
       local metadata = wielded_stack:get_metadata()
-      print("Meta: " .. metadata)
+      --print("Meta: " .. metadata)
       if metadata == nil or metadata == "" then
          can_open = false
       else
@@ -89,6 +89,27 @@ function doorclick(pos, node, clicker)
 
 end
 
+function getNextTo(pos, param2)
+
+   local nextto
+   if param2 == 0 then
+      nextto = { x = pos.x - 1, y = pos.y, z = pos.z }
+   elseif param2 == 1 then
+      nextto = { x = pos.x, y = pos.y, z = pos.z + 1 }
+   elseif param2 == 2 then
+      nextto = { x = pos.x + 1, y = pos.y, z = pos.z }
+   elseif param2 == 3 then
+      nextto = { x = pos.x, y = pos.y, z = pos.z - 1 }
+   else
+      nextto = nil
+   end
+   return nextto
+end
+
+function posEquals(pos1, pos2)
+   return pos1.x == pos2.x and pos1.y == pos2.y and pos1.z == pos2.z
+end
+
 function doortoggle(pos, node, clicker)
    local newname
    if node.name == "spacestation:door_open" then
@@ -103,57 +124,21 @@ function doortoggle(pos, node, clicker)
       })
    -- param2 should be facing dir
    -- 0 = z; 1 = x; 2 = -z; 3 = -x
-   if node.param2 == 0 then
-      local newpos = { x = pos.x - 1, y = pos.y, z = pos.z }
-      local checknode = minetest.get_node(newpos)
-      if (checknode.name == "spacestation:door" or 
-          checknode.name == "spacestation:door_open") and
-         checknode.param2 == 2 then
-         minetest.swap_node(newpos, { 
-            name = newname, 
-            param1 = checknode.param1, 
-            param2 = checknode.param2
-            })
-      end
-   elseif node.param2 == 1 then
-      local newpos = { x = pos.x, y = pos.y, z = pos.z + 1 }
-      local checknode = minetest.get_node(newpos)
-      if (checknode.name == "spacestation:door" or 
-          checknode.name == "spacestation:door_open") and
-         checknode.param2 == 3 then
-         minetest.swap_node(newpos, { 
-            name = newname, 
-            param1 = checknode.param1, 
-            param2 = checknode.param2
-            })
-      end
-   elseif node.param2 == 2 then
-      local newpos = { x = pos.x + 1, y = pos.y, z = pos.z }
-      local checknode = minetest.get_node(newpos)
-      if (checknode.name == "spacestation:door" or 
-          checknode.name == "spacestation:door_open") and
-         checknode.param2 == 0 then
-         minetest.swap_node(newpos, { 
-            name = newname, 
-            param1 = checknode.param1, 
-            param2 = checknode.param2
-            })
-      end
-   elseif node.param2 == 3 then
-      local newpos = { x = pos.x, y = pos.y, z = pos.z - 1 }
-      local checknode = minetest.get_node(newpos)
-      if (checknode.name == "spacestation:door" or 
-          checknode.name == "spacestation:door_open") and
-         checknode.param2 == 1 then
-         minetest.swap_node(newpos, { 
-            name = newname, 
-            param1 = checknode.param1, 
-            param2 = checknode.param2
-            })
+   local nextto = getNextTo(pos, node.param2)
+   if nextto ~= nil then
+      local checknode = minetest.get_node(nextto)
+      local should_be_this_pos = getNextTo(nextto, checknode.param2)
+      if should_be_this_pos ~= nil and 
+         posEquals(should_be_this_pos, pos) and
+         (checknode.name == "spacestation:door" or
+          checknode.name == "spacestation:door_open") then
+            minetest.swap_node(nextto, { 
+               name = newname, 
+               param1 = checknode.param1, 
+               param2 = checknode.param2
+               })
       end
    end
-
-
 
 end
 
