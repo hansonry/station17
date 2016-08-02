@@ -89,26 +89,23 @@ function doorclick(pos, node, clicker)
 
 end
 
-function getNextTo(pos, param2)
+function getOffset(param2)
 
    local nextto
    if param2 == 0 then
-      nextto = { x = pos.x - 1, y = pos.y, z = pos.z }
+      nextto = { x = -1, y = 0, z =  0 }
    elseif param2 == 1 then
-      nextto = { x = pos.x, y = pos.y, z = pos.z + 1 }
+      nextto = { x =  0, y = 0, z =  1 }
    elseif param2 == 2 then
-      nextto = { x = pos.x + 1, y = pos.y, z = pos.z }
+      nextto = { x =  1, y = 0, z =  0 }
    elseif param2 == 3 then
-      nextto = { x = pos.x, y = pos.y, z = pos.z - 1 }
+      nextto = { x =  0, y = 0, z = -1 }
    else
       nextto = nil
    end
    return nextto
 end
 
-function posEquals(pos1, pos2)
-   return pos1.x == pos2.x and pos1.y == pos2.y and pos1.z == pos2.z
-end
 
 function doortoggle(pos, node, clicker)
    local newname
@@ -124,15 +121,16 @@ function doortoggle(pos, node, clicker)
       })
    -- param2 should be facing dir
    -- 0 = z; 1 = x; 2 = -z; 3 = -x
-   local nextto = getNextTo(pos, node.param2)
-   if nextto ~= nil then
-      local checknode = minetest.get_node(nextto)
-      local should_be_this_pos = getNextTo(nextto, checknode.param2)
-      if should_be_this_pos ~= nil and 
-         posEquals(should_be_this_pos, pos) and
+   local offset1 = getOffset(node.param2)
+   if offset1 ~= nil then
+      local other_pos = vector.add(pos, offset1)
+      local checknode = minetest.get_node(other_pos)
+      local offset2 = getOffset(checknode.param2)
+      if offset2 ~= nil and 
+         vector.equals(vector.add(offset1, offset2), vector.new(0,0,0)) and
          (checknode.name == "spacestation:door" or
           checknode.name == "spacestation:door_open") then
-            minetest.swap_node(nextto, { 
+            minetest.swap_node(other_pos, { 
                name = newname, 
                param1 = checknode.param1, 
                param2 = checknode.param2
