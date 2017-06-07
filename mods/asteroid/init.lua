@@ -1,18 +1,18 @@
 -- Parameters
 
-local YMIN = -31000
-local YMAX = 31000
+local YMIN = 900
+local YMAX = 62900
 local XMIN = -31000
 local XMAX = 31000
 local ZMIN = -31000
 local ZMAX = 31000
 
-local ASCOT = 1.0 -- Asteroid / comet nucleus noise threshold.
+local ASCOT = 0.70 -- Asteroid / comet nucleus noise threshold.
 local STOT = 0.125 -- Asteroid stone threshold.
 local COBT = 0.05 -- Asteroid cobble threshold.
 local GRAT = 0.02 -- Asteroid gravel threshold.
 local ICET = 0.05 -- Comet ice threshold.
-local ATMOT = -0.2 -- Comet atmosphere threshold.
+local ATMOT = 0 -- Comet atmosphere threshold.
 local FISTS = 0.01 -- Fissure noise threshold at surface. Controls size of fissures
 					-- and amount / size of fissure entrances at surface.
 local FISEXP = 0.3 -- Fissure expansion rate under surface.
@@ -25,14 +25,14 @@ local CRRAN = 8 -- Crater radius range.
 local SPAJ = 1 -- Space jump (1 = normal)
 local SPAG = 0.1 -- Space gravity (1 = normal)
 
-local DEBUG = true
+local DEBUG = false
 
 -- 3D Perlin noise for large structures
 
 local np_large = {
 	offset = 0,
 	scale = 1,
-	spread = {x = 192, y = 192, z = 192},
+	spread = {x = 50, y = 50, z = 50},
 	seed = -83928935,
 	octaves = 4,
 	persist = 0.6,
@@ -99,11 +99,13 @@ local c_goldore = minetest.get_content_id("asteroid:goldore")
 local c_diamondore = minetest.get_content_id("asteroid:diamondore")
 local c_meseore = minetest.get_content_id("asteroid:meseore")
 local c_waterice = minetest.get_content_id("asteroid:waterice")
-local c_atmos = minetest.get_content_id("asteroid:atmos")
+local c_atmos = c_air -- minetest.get_content_id("asteroid:atmos")
 local c_snowblock = minetest.get_content_id("asteroid:snowblock")
 
 
 -- On dignode function. Atmosphere flows into a dug hole.
+
+--[[
 
 minetest.register_on_dignode(function(pos, oldnode, digger)
 	local x = pos.x
@@ -124,7 +126,7 @@ minetest.register_on_dignode(function(pos, oldnode, digger)
 	end
 	end
 end)
-
+]]--
 
 -- Globalstep function for skybox, physics override, light override
 
