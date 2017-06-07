@@ -68,9 +68,12 @@ function doorclick(pos, node, clicker)
          local item_meta = minetest.deserialize(metadata)
             --active = false,
             --access = {},
+         --print("lock: " .. lock_var)
+         --print("dump: " .. dump(item_meta))
          if item_meta.active then
             can_open = false
             for _,v in ipairs(item_meta.access) do
+               --print("v: " .. v)
                if v == lock_var then
                   can_open = true
                   break
@@ -266,15 +269,15 @@ minetest.register_craftitem("spacestation:programmer", {
 })
 
 
-btn_text_add = "Add"
-btn_text_remove = "Remove"
-btn_text_clear = "Clear Text Field"
-btn_text_blank = "Blank Card"
+btn_text_set = "Set"
+btn_text_reset = "Reset"
+btn_text_clear = "Clear"
 
-function computer_idcard_build_formspec(item_meta, selected_index, text_box_str)
+function computer_idcard_build_formspec(item_meta)
 
-   local perm_list = table.concat(item_meta.access, ",")
+   local perm_list = minetest.formspec_escape(table.concat(item_meta.access, "\n"))
 
+   --print("List:  " .. perm_list .. "\n")
    local checkbox
    if item_meta.active then
       checkbox = "true"
@@ -284,14 +287,11 @@ function computer_idcard_build_formspec(item_meta, selected_index, text_box_str)
 
    local spec = "size[10,9]"..
                 "list[current_name;input;0,1;1,1;]"..
-                "tablecolumns[text]"..
-                "table[1,0;4,3;spacestation:computer_idcard_table;" .. perm_list .. ";" ..selected_index .. "]"..
-                "button[5,0;2,1;spacestation:computer_idcard_button;" .. btn_text_add .. "]"..
-                "button[5,1;3,1;spacestation:computer_idcard_button;" .. btn_text_remove .. "]"..
-                "button[5,2;3,1;spacestation:computer_idcard_button;" .. btn_text_clear .. "]"..
-                "checkbox[5,3;spacestation:computer_idcard_checkbox;Enabled;" .. checkbox .. "]" ..
-                "button[5,4;4,1;spacestation:computer_idcard_button;" .. btn_text_blank .. "]"..
-                "field[1,4;4,1;spacestation:computer_idcard_text;New Permission;" .. text_box_str .. "]"..
+                "textarea[2,1;4,3;spacestation:computer_idcard_text;Permissions;" .. perm_list .. "]"..
+                "button[6,0;2,1;spacestation:computer_idcard_button;" .. btn_text_set .. "]"..
+               -- "button[6,1;3,1;spacestation:computer_idcard_button;" .. btn_text_reset .. "]"..
+                "button[6,2;3,1;spacestation:computer_idcard_button;" .. btn_text_clear .. "]"..
+                "checkbox[6,3;spacestation:computer_idcard_checkbox;Enabled;" .. checkbox .. "]" ..
                 "list[current_player;main;1,5;8,4;]"..
                 "listring[]"
    return spec
@@ -316,7 +316,7 @@ minetest.register_node("spacestation:computer_idcard", {
       local inv = meta:get_inventory()
       local item_meta = { active = false, access = {} }
 
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta, 1, ""))
+      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
       
       meta:set_string("infotext", "ID Computer")
       meta:set_string("text_field", "")
@@ -346,7 +346,7 @@ minetest.register_node("spacestation:computer_idcard", {
 
       -- Build list string
 
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta, 1, ""))
+      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
       
    end,
    on_metadata_inventory_take = function(pos, listname, index, stack, player)
@@ -355,7 +355,7 @@ minetest.register_node("spacestation:computer_idcard", {
          active = false,
          access = {},
       }
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta, 1, ""))
+      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
    end,
    on_receive_fields = function(pos, formname, fields, sender)
       local meta = minetest.get_meta(pos)
@@ -379,36 +379,21 @@ minetest.register_node("spacestation:computer_idcard", {
       
       local cmp_button   = fields["spacestation:computer_idcard_button"]
       local cmp_text     = fields["spacestation:computer_idcard_text"]
-      local cmp_table    = fields["spacestation:computer_idcard_table"]
       local cmp_checkbox = fields["spacestation:computer_idcard_checkbox"]
       local cmp_text_out = cmp_text
       
       local cmp_index = nil
-      if cmp_button == btn_text_add then
-         if cmp_text ~= "" then
-            table.insert(item_meta.access, cmp_text)
-         end
-      elseif cmp_button == btn_text_remove then
-         for i,v in ipairs(item_meta.access) do
-            if v == cmp_text then
-               table.remove(item_meta.access, i)
-               break
-            end
-
-         end
-      elseif cmp_button == btn_text_clear then
-         cmp_text_out = ""
-      elseif cmp_button == btn_text_blank then
-         item_meta.active = false
+      if cmp_button == btn_text_set then
+         local perm
          item_meta.access = {}
-      elseif cmp_table ~= nil then
-         local tbl_exp = minetest.explode_table_event(cmp_table)
-         if tbl_exp.type == "DCL" then
-            cmp_text_out = item_meta.access[tbl_exp.row]
-            cmp_index = tbl_exp.row
-         elseif tbl_exp.tpe == "CHG" then
-            cmp_index = tbl_exp.row
+         for perm in  string.gmatch(cmp_text, "%S+") do
+            table.insert(item_meta.access, perm)
          end
+         --print(dump(item_meta))
+      elseif cmp_button == btn_text_reset then
+         -- Maybe I dont need to do anything here
+      elseif cmp_button == btn_text_clear then
+         item_meta.access = {}
       elseif cmp_checkbox ~= nil then
          if cmp_checkbox == "true" then
             item_meta.active = true
@@ -420,19 +405,8 @@ minetest.register_node("spacestation:computer_idcard", {
       stack:set_metadata(minetest.serialize(item_meta))
       inv:set_stack("input", 1, stack)
 
-      if cmp_text_out == nil then
-         cmp_text_out = meta:get_string("text_field")
-      else
-         meta:set_string("text_field", cmp_text_out)
-      end
 
-      if cmp_index == nil then
-         cmp_index = meta:get_int("index")
-      else 
-         meta:set_int("index", cmp_index)
-      end
-
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta, cmp_index, cmp_text_out))
+      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
 
    end,
    --[[
