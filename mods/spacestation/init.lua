@@ -1,6 +1,8 @@
 -- spacestation (Minetest 0.4 mod)
 -- Space Station parts
 
+spacestation = {}
+
 -- Register nodes
 
 minetest.register_node("spacestation:floor", {
@@ -421,4 +423,9 @@ minetest.register_node("spacestation:computer_idcard", {
    end
    --]]
 })
+
+local spacestation_path = minetest.get_modpath("spacestation")
+
+dofile(spacestation_path .. "/mapgen.lua")
+dofile(spacestation_path .. "/skybox.lua")
 
