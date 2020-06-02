@@ -424,6 +424,50 @@ minetest.register_node("spacestation:computer_idcard", {
    --]]
 })
 
+sfinv.register_page("spacestation:equipment", {
+   title = "Equipment",
+   get = function(self, player, context)
+      local formspec = "list[current_player;idcard;0,0;1,1]"
+      return sfinv.make_formspec(player, context, formspec, true)
+   end
+})
+
+minetest.register_on_joinplayer(function(player)
+   local inv = player:get_inventory()
+   inv:set_size("idcard", 1)
+end)
+
+minetest.register_allow_player_inventory_action(function(player, action, inventory, inventory_info)
+   local liststring = nil
+   local count = 0
+   local itemType = nil
+   if action == 'move' then
+      local stack = inventory:get_stack(inventory_info.from_list, inventory_info.from_index)
+      liststring = inventory_info.to_list
+      count = inventory_info.count
+      if count == nil then
+         count = stack:get_count() 
+      end
+      itemType = stack:get_name()
+   elseif action == 'put' then
+      liststring = inventory_info.liststring
+      count = inventory_info.stack:get_count()
+      itemType = inventory_info.stack:get_name()
+   elseif action == 'take' then
+      count = inventory_info.stack:get_count()
+   end
+
+   if liststring == 'idcard' then
+      if itemType == 'spacestation:idcard' then
+         return 1
+      else
+         return 0
+      end
+   end
+   return count 
+
+end)
+
 local spacestation_path = minetest.get_modpath("spacestation")
 
 dofile(spacestation_path .. "/mapgen.lua")
