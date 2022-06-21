@@ -135,8 +135,6 @@ function getOtherDoor(pos, doorNode, closedDoorName)
    if not vector.equals(offsetSum, vector.new(0,0,0)) then 
       return nil, nil
    end
-   print(otherDoorPos)
-   print(possibleDoor)
    return otherDoorPos, possibleDoor
 end
    
@@ -155,8 +153,6 @@ function doortoggle(pos, node, clicker)
       })
    local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, "spacestation:door")
    if otherDoorPos ~= nil then
-      print(otherDoorPos)
-      print(otherDoorNode)
       minetest.swap_node(otherDoorPos, { 
          name = newname, 
          param1 = otherDoorNode.param1, 
