@@ -94,23 +94,52 @@ function doorclick(pos, node, clicker)
 
 end
 
-function getOffset(param2)
+function getOffset(facingDir)
 
-   local nextto
-   if param2 == 0 then
-      nextto = { x = -1, y = 0, z =  0 }
-   elseif param2 == 1 then
-      nextto = { x =  0, y = 0, z =  1 }
-   elseif param2 == 2 then
-      nextto = { x =  1, y = 0, z =  0 }
-   elseif param2 == 3 then
-      nextto = { x =  0, y = 0, z = -1 }
+   local offset
+   if facingDir == 0 then
+      offset = { x = -1, y = 0, z =  0 }
+   elseif facingDir == 1 then
+      offset = { x =  0, y = 0, z =  1 }
+   elseif facingDir == 2 then
+      offset = { x =  1, y = 0, z =  0 }
+   elseif facingDir == 3 then
+      offset = { x =  0, y = 0, z = -1 }
    else
-      nextto = nil
+      offset = nil
    end
-   return nextto
+   return offset
 end
 
+
+
+function getOtherDoor(pos, doorNode, closedDoorName)
+   -- param2 should be facing dir
+   -- 0 = z; 1 = x; 2 = -z; 3 = -x
+   local offset = getOffset(doorNode.param2)
+   if offset == nil then
+      return nil, nil
+   end
+   local otherDoorPos = vector.add(pos, offset)
+   local possibleDoor = minetest.get_node(otherDoorPos)
+   if possibleDoor ~= nil and 
+      possibleDoor.name ~= closedDoorName and
+      possibleDoor.name ~= closedDoorName .. "_open" then
+      return nil, nil
+   end
+   local otherDoorOffset = getOffset(possibleDoor.param2)
+   if otherDoorOffset == nil then
+      return nil, nil
+   end
+   local offsetSum = vector.add(offset, otherDoorOffset)
+   if not vector.equals(offsetSum, vector.new(0,0,0)) then 
+      return nil, nil
+   end
+   print(otherDoorPos)
+   print(possibleDoor)
+   return otherDoorPos, possibleDoor
+end
+   
 
 function doortoggle(pos, node, clicker)
    local newname
@@ -124,23 +153,15 @@ function doortoggle(pos, node, clicker)
       param1 = node.param1, 
       param2 = node.param2
       })
-   -- param2 should be facing dir
-   -- 0 = z; 1 = x; 2 = -z; 3 = -x
-   local offset1 = getOffset(node.param2)
-   if offset1 ~= nil then
-      local other_pos = vector.add(pos, offset1)
-      local checknode = minetest.get_node(other_pos)
-      local offset2 = getOffset(checknode.param2)
-      if offset2 ~= nil and 
-         vector.equals(vector.add(offset1, offset2), vector.new(0,0,0)) and
-         (checknode.name == "spacestation:door" or
-          checknode.name == "spacestation:door_open") then
-            minetest.swap_node(other_pos, { 
-               name = newname, 
-               param1 = checknode.param1, 
-               param2 = checknode.param2
-               })
-      end
+   local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, "spacestation:door")
+   if otherDoorPos ~= nil then
+      print(otherDoorPos)
+      print(otherDoorNode)
+      minetest.swap_node(otherDoorPos, { 
+         name = newname, 
+         param1 = otherDoorNode.param1, 
+         param2 = otherDoorNode.param2
+         })
    end
 
 end
@@ -247,6 +268,7 @@ minetest.register_craftitem("spacestation:programmer", {
          end
 
          local form = 
+            "formspec_version[5]" ..
             "size[4,2]" ..
             "field[0,0;4,1;spacestation:programmer_text;Permission;" .. lock_var .. "]" ..
             "button_exit[0,1;4,1;spacestation:programmer_button;Program]"
