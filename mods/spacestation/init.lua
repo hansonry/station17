@@ -52,7 +52,76 @@ minetest.register_node("spacestation:light", {
 	sounds = default.node_sound_defaults(),
 })
 
-function makeDoorOpen(closedDoorName)
+local function getOffset(facingDir)
+
+   local offset
+   if facingDir == 0 then
+      offset = { x = -1, y = 0, z =  0 }
+   elseif facingDir == 1 then
+      offset = { x =  0, y = 0, z =  1 }
+   elseif facingDir == 2 then
+      offset = { x =  1, y = 0, z =  0 }
+   elseif facingDir == 3 then
+      offset = { x =  0, y = 0, z = -1 }
+   else
+      offset = nil
+   end
+   return offset
+end
+
+
+
+local function getOtherDoor(pos, doorNode, closedDoorName, openDoorName)
+   -- param2 should be facing dir
+   -- 0 = z; 1 = x; 2 = -z; 3 = -x
+   local offset = getOffset(doorNode.param2)
+   if offset == nil then
+      return nil, nil
+   end
+   local otherDoorPos = vector.add(pos, offset)
+   local possibleDoor = minetest.get_node(otherDoorPos)
+   if possibleDoor ~= nil and 
+      possibleDoor.name ~= closedDoorName and
+      possibleDoor.name ~= openDoorName then
+      return nil, nil
+   end
+   local otherDoorOffset = getOffset(possibleDoor.param2)
+   if otherDoorOffset == nil then
+      return nil, nil
+   end
+   local offsetSum = vector.add(offset, otherDoorOffset)
+   if not vector.equals(offsetSum, vector.new(0,0,0)) then 
+      return nil, nil
+   end
+   return otherDoorPos, possibleDoor
+end
+   
+
+local function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
+   local newname
+   if node.name == openDoorName then
+      newname = closedDoorName
+   else
+      newname = openDoorName
+   end
+   minetest.swap_node(pos, { 
+      name = newname, 
+      param1 = node.param1, 
+      param2 = node.param2
+      })
+   local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, closedDoorName, openDoorName)
+   if otherDoorPos ~= nil then
+      minetest.swap_node(otherDoorPos, { 
+         name = newname, 
+         param1 = otherDoorNode.param1, 
+         param2 = otherDoorNode.param2
+         })
+   end
+
+end
+
+
+local function makeDoorOpen(closedDoorName)
 
    local function doorOpen(pos, node, clicker)
       -- Is door access locked
@@ -97,79 +166,11 @@ function makeDoorOpen(closedDoorName)
    return doorOpen
 end
 
-function makeDoorClose(closedDoorName)
+local function makeDoorClose(closedDoorName)
    local function doorClose(pos, node, clicker)
       doorToggle(pos, node, clicker, closedDoorName, closedDoorName .. "_open")
    end
    return doorClose
-end
-
-function getOffset(facingDir)
-
-   local offset
-   if facingDir == 0 then
-      offset = { x = -1, y = 0, z =  0 }
-   elseif facingDir == 1 then
-      offset = { x =  0, y = 0, z =  1 }
-   elseif facingDir == 2 then
-      offset = { x =  1, y = 0, z =  0 }
-   elseif facingDir == 3 then
-      offset = { x =  0, y = 0, z = -1 }
-   else
-      offset = nil
-   end
-   return offset
-end
-
-
-
-function getOtherDoor(pos, doorNode, closedDoorName, openDoorName)
-   -- param2 should be facing dir
-   -- 0 = z; 1 = x; 2 = -z; 3 = -x
-   local offset = getOffset(doorNode.param2)
-   if offset == nil then
-      return nil, nil
-   end
-   local otherDoorPos = vector.add(pos, offset)
-   local possibleDoor = minetest.get_node(otherDoorPos)
-   if possibleDoor ~= nil and 
-      possibleDoor.name ~= closedDoorName and
-      possibleDoor.name ~= openDoorName then
-      return nil, nil
-   end
-   local otherDoorOffset = getOffset(possibleDoor.param2)
-   if otherDoorOffset == nil then
-      return nil, nil
-   end
-   local offsetSum = vector.add(offset, otherDoorOffset)
-   if not vector.equals(offsetSum, vector.new(0,0,0)) then 
-      return nil, nil
-   end
-   return otherDoorPos, possibleDoor
-end
-   
-
-function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
-   local newname
-   if node.name == openDoorName then
-      newname = closedDoorName
-   else
-      newname = openDoorName
-   end
-   minetest.swap_node(pos, { 
-      name = newname, 
-      param1 = node.param1, 
-      param2 = node.param2
-      })
-   local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, closedDoorName, openDoorName)
-   if otherDoorPos ~= nil then
-      minetest.swap_node(otherDoorPos, { 
-         name = newname, 
-         param1 = otherDoorNode.param1, 
-         param2 = otherDoorNode.param2
-         })
-   end
-
 end
 
 
@@ -253,12 +254,50 @@ minetest.register_craftitem("spacestation:idcard", {
    stack_max = 1,
 })
 
+local _context = {}
+local function get_context(player)
+   if type(player) ~= "string" then
+      -- Possibly really bad assuption that the table is a player
+      player = player:get_player_name()
+   end
+   local context = _context[player] or {}
+   _context[player] = context
+   return context
+end
+
+minetest.register_on_leaveplayer(function(player)
+   _contexts[player:get_player_name()] = nil
+end)
+
+
+minetest.register_on_player_receive_fields(function(player, formname, fields)
+   if formname ~= "spacestation:programmer" then
+      return false
+   end
+   local context = get_context(player)
+   --print(dump(fields))
+   -- If you press esc you only get the exit field
+   local text = fields["spacestation:programmer_text"]
+   if text == nil or context.formspec == nil then
+      return false
+   end
+   local target = context.formspec.target
+   context.formspec = nil
+   local meta = minetest.get_meta(target)
+
+   meta:set_string("lock", fields["spacestation:programmer_text"])
+
+   return true
+end)
 
 minetest.register_craftitem("spacestation:programmer", {
    description = "Programmer",
    inventory_image = "spacestation_programmer.png",
    stack_max = 1,
    on_use = function(itemstack, user, pointed_thing)
+      if pointed_thing.type ~= "node" then
+         return
+      end
       --print(dump(pointed_thing))
       local node_name = minetest.get_node(pointed_thing.under).name
       --print(node_name)
@@ -272,6 +311,10 @@ minetest.register_craftitem("spacestation:programmer", {
          if lock_var == nil then
             lock_var = ""
          end
+         local context = get_context(user)
+         context.formspec = {
+            target = pointed_thing.under
+         }
 
          local form = 
             "formspec_version[5]" ..
@@ -281,29 +324,17 @@ minetest.register_craftitem("spacestation:programmer", {
 
          --print(user:get_player_name())
          minetest.show_formspec(user:get_player_name(), "spacestation:programmer", form)
-         minetest.register_on_player_receive_fields(function(player, formname, fields)
-            if formname ~= "spacestation:programmer" then
-               return false
-            end
-            --print(dump(fields))
-            -- If you press esc you only get the exit field
-            if fields["spacestation:programmer_text"] ~= nil then
-               meta:set_string("lock", fields["spacestation:programmer_text"])
-            end
-
-            return true
-         end)
       end
       return nil
    end,
 })
 
 
-btn_text_set = "Set"
-btn_text_reset = "Reset"
-btn_text_clear = "Clear"
+local btn_text_set   = "Set"
+local btn_text_reset = "Reset"
+local btn_text_clear = "Clear"
 
-function computer_idcard_build_formspec(item_meta)
+local function computer_idcard_build_formspec(item_meta)
 
    local perm_list = minetest.formspec_escape(table.concat(item_meta.access, "\n"))
 
