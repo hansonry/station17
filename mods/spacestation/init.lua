@@ -52,7 +52,7 @@ minetest.register_node("spacestation:light", {
 	sounds = default.node_sound_defaults(),
 })
 
-function doorclick(pos, node, clicker)
+function doorOpen(pos, node, clicker)
    -- Is door access locked
    local meta = minetest.get_meta(pos)
    local lock_var = meta:get_string("lock")
@@ -89,9 +89,13 @@ function doorclick(pos, node, clicker)
    end
 
    if can_open then
-      doortoggle(pos, node, clicker)
+      doorToggle(pos, node, clicker)
    end
 
+end
+
+function doorClose(pos, node, clicker)
+   doorToggle(pos, node, clicker)
 end
 
 function getOffset(facingDir)
@@ -139,7 +143,7 @@ function getOtherDoor(pos, doorNode, closedDoorName)
 end
    
 
-function doortoggle(pos, node, clicker)
+function doorToggle(pos, node, clicker)
    local newname
    if node.name == "spacestation:door_open" then
       newname = "spacestation:door"
@@ -181,7 +185,7 @@ minetest.register_node("spacestation:door", {
 	collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_c.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = doorclick,
+   on_rightclick = doorOpen,
 })
 
 minetest.register_node("spacestation:door_open", {
@@ -202,7 +206,7 @@ minetest.register_node("spacestation:door_open", {
 	--collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_c_open.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = doortoggle,
+   on_rightclick = doorClose,
 })
 
 minetest.register_node("spacestation:locker", {
