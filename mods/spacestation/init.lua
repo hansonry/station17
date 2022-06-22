@@ -52,50 +52,56 @@ minetest.register_node("spacestation:light", {
 	sounds = default.node_sound_defaults(),
 })
 
-function doorOpen(pos, node, clicker)
-   -- Is door access locked
-   local meta = minetest.get_meta(pos)
-   local lock_var = meta:get_string("lock")
-   local can_open
-   -- print(dump(lock_var))
-   if lock_var == nil  or lock_var == "" then
-      can_open = true
-   else
-      local wielded_stack = clicker:get_wielded_item()
-      local metadata = wielded_stack:get_metadata()
-      --print("Meta: " .. metadata)
-      if metadata == nil or metadata == "" then
-         can_open = false
-      else
-         local item_meta = minetest.deserialize(metadata)
-            --active = false,
-            --access = {},
-         --print("lock: " .. lock_var)
-         --print("dump: " .. dump(item_meta))
-         if item_meta.active then
-            can_open = false
-            for _,v in ipairs(item_meta.access) do
-               --print("v: " .. v)
-               if v == lock_var then
-                  can_open = true
-                  break
-               end
-            end
-         else
-            can_open = false
-         end
+function makeDoorOpen(closedDoorName)
 
+   local function doorOpen(pos, node, clicker)
+      -- Is door access locked
+      local meta = minetest.get_meta(pos)
+      local lock_var = meta:get_string("lock")
+      local can_open
+      -- print(dump(lock_var))
+      if lock_var == nil  or lock_var == "" then
+         can_open = true
+      else
+         local wielded_stack = clicker:get_wielded_item()
+         local metadata = wielded_stack:get_metadata()
+         --print("Meta: " .. metadata)
+         if metadata == nil or metadata == "" then
+            can_open = false
+         else
+            local item_meta = minetest.deserialize(metadata)
+               --active = false,
+               --access = {},
+            --print("lock: " .. lock_var)
+            --print("dump: " .. dump(item_meta))
+            if item_meta.active then
+               can_open = false
+               for _,v in ipairs(item_meta.access) do
+                  --print("v: " .. v)
+                  if v == lock_var then
+                     can_open = true
+                     break
+                  end
+               end
+            else
+               can_open = false
+            end
+
+         end
+      end
+
+      if can_open then
+         doorToggle(pos, node, clicker, closedDoorName, closedDoorName .. "_open")
       end
    end
-
-   if can_open then
-      doorToggle(pos, node, clicker)
-   end
-
+   return doorOpen
 end
 
-function doorClose(pos, node, clicker)
-   doorToggle(pos, node, clicker)
+function makeDoorClose(closedDoorName)
+   local function doorClose(pos, node, clicker)
+      doorToggle(pos, node, clicker, closedDoorName, closedDoorName .. "_open")
+   end
+   return doorClose
 end
 
 function getOffset(facingDir)
@@ -117,7 +123,7 @@ end
 
 
 
-function getOtherDoor(pos, doorNode, closedDoorName)
+function getOtherDoor(pos, doorNode, closedDoorName, openDoorName)
    -- param2 should be facing dir
    -- 0 = z; 1 = x; 2 = -z; 3 = -x
    local offset = getOffset(doorNode.param2)
@@ -128,7 +134,7 @@ function getOtherDoor(pos, doorNode, closedDoorName)
    local possibleDoor = minetest.get_node(otherDoorPos)
    if possibleDoor ~= nil and 
       possibleDoor.name ~= closedDoorName and
-      possibleDoor.name ~= closedDoorName .. "_open" then
+      possibleDoor.name ~= openDoorName then
       return nil, nil
    end
    local otherDoorOffset = getOffset(possibleDoor.param2)
@@ -143,19 +149,19 @@ function getOtherDoor(pos, doorNode, closedDoorName)
 end
    
 
-function doorToggle(pos, node, clicker)
+function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
    local newname
-   if node.name == "spacestation:door_open" then
-      newname = "spacestation:door"
+   if node.name == openDoorName then
+      newname = closedDoorName
    else
-      newname = "spacestation:door_open"
+      newname = openDoorName
    end
    minetest.swap_node(pos, { 
       name = newname, 
       param1 = node.param1, 
       param2 = node.param2
       })
-   local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, "spacestation:door")
+   local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, closedDoorName, openDoorName)
    if otherDoorPos ~= nil then
       minetest.swap_node(otherDoorPos, { 
          name = newname, 
@@ -185,7 +191,7 @@ minetest.register_node("spacestation:door", {
 	collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_c.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = doorOpen,
+   on_rightclick = makeDoorOpen("spacestation:door"),
 })
 
 minetest.register_node("spacestation:door_open", {
@@ -206,7 +212,7 @@ minetest.register_node("spacestation:door_open", {
 	--collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_c_open.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = doorClose,
+   on_rightclick = makeDoorClose("spacestation:door"),
 })
 
 minetest.register_node("spacestation:locker", {
