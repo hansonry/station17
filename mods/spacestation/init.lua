@@ -571,20 +571,27 @@ local btn_text_set   = "Set"
 local btn_text_reset = "Reset"
 local btn_text_clear = "Clear"
 
-local function computer_idcard_build_formspec(item_meta)
+local function computer_idcard_build_formspec(inventory)
+   local target_id_stack = inventory:get_stack("target_id", 1)
+   local target_id_metadata = target_id_stack:get_meta()
+   local target_id_item_meta = id_card_metadata_table.get(target_id_metadata)
+   
+   local user_id_stack = inventory:get_stack("user_id", 1)
+   local user_id_metadata = user_id_stack:get_meta()
+   local user_id_item_meta = id_card_metadata_table.get(user_id_metadata)
 
-   local perm_list = minetest.formspec_escape(table.concat(item_meta.access, "\n"))
+   local perm_list = minetest.formspec_escape(table.concat(target_id_item_meta.access, "\n"))
 
    --print("List:  " .. perm_list .. "\n")
    local checkbox
-   if item_meta.active then
+   if target_id_item_meta.active then
       checkbox = "true"
    else
       checkbox = "false"
    end 
 
    local spec = "size[10,9]"..
-                "list[context;input;0,1;1,1;]"..
+                "list[context;target_id;0,1;1,1;]"..
                 "textarea[2,1;4,3;spacestation:computer_idcard_text;Permissions;" .. perm_list .. "]"..
                 "button[6,0;2,1;spacestation:computer_idcard_button;" .. btn_text_set .. "]"..
                -- "button[6,1;3,1;spacestation:computer_idcard_button;" .. btn_text_reset .. "]"..
@@ -612,15 +619,16 @@ minetest.register_node("spacestation:computer_idcard", {
 	sounds = default.node_sound_stone_defaults(),
    on_construct = function(pos)
       local meta = minetest.get_meta(pos)
-      local inv = meta:get_inventory()
-      local item_meta = { active = false, access = {} }
-
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
       
       meta:set_string("infotext", "ID Computer")
       meta:set_string("text_field", "")
       meta:set_int("index", 1)
-      inv:set_size("input", 1)
+      
+      local inv = meta:get_inventory()
+      inv:set_size("target_id", 1)
+      inv:set_size("user_id", 1)
+      
+      meta:set_string("formspec", computer_idcard_build_formspec(inv))
    end,
    allow_metadata_inventory_put = function(pos, listname, index, stack, player)
       if stack:get_name() == "spacestation:idcard" then
@@ -632,24 +640,22 @@ minetest.register_node("spacestation:computer_idcard", {
    on_metadata_inventory_put = function(pos, listname, index, stack2, player)
       local meta = minetest.get_meta(pos)
       local inv = meta:get_inventory()
-      local stack = inv:get_stack("input", 1)
-      local metadata = stack:get_meta()
-      local item_meta = id_card_metadata_table.get(metadata)
 
+      local formspec_str = computer_idcard_build_formspec(inv)
       -- Build list string
 
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
+      meta:set_string("formspec", formspec_str)
       
    end,
    on_metadata_inventory_take = function(pos, listname, index, stack, player)
       local meta = minetest.get_meta(pos)
-      local item_meta = id_card_metadata_table.get(meta)
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
+      local inv = meta:get_inventory()
+      meta:set_string("formspec", computer_idcard_build_formspec(inv))
    end,
    on_receive_fields = function(pos, formname, fields, sender)
       local meta = minetest.get_meta(pos)
       local inv = meta:get_inventory()
-      local stack = inv:get_stack("input", 1)
+      local stack = inv:get_stack("target_id", 1)
       if stack:get_name() ~= "spacestation:idcard" then
          return
       end
@@ -684,17 +690,17 @@ minetest.register_node("spacestation:computer_idcard", {
       end
       --print(minetest.serialize(item_meta))
       id_card_metadata_table.set(metadata, item_meta)
-      inv:set_stack("input", 1, stack)
+      inv:set_stack("target_id", 1, stack)
 
 
-      meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
+      meta:set_string("formspec", computer_idcard_build_formspec(inv))
 
    end,
    --[[
    on_rightclick = function(pos, self, clicker, itemstack)
       
       local spec = "size[8,9]"..
-                   "list[context;input;0;0;1;1]"..
+                   "list[context;target_id;0;0;1;1]"..
                    "
       minetest.show_formspec(clicker:get_player_name(), "spacestation:computer_idcard", spec)
       
