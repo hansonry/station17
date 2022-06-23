@@ -242,10 +242,10 @@ local function create_metatable_functions(metatable_key, create_new_table_functi
       local text_data = minetest.serialize(data)
       metadata:set_string(metatable_key, text_data)
    end
-   return get_metadata_table, set_metadata_table
+   return {get = get_metadata_table, set = set_metadata_table}
 end
 
-local get_id_card_metadata_table, set_id_card_metadata_table = create_metatable_functions("id_card", function()
+local id_card_metadata_table = create_metatable_functions("id_card", function()
    return {
       name = "",
       job_title = "",
@@ -385,7 +385,7 @@ local function makeDoorOpen(closedDoorName)
       else
          local wielded_stack = clicker:get_wielded_item()
          local metadata = wielded_stack:get_meta()
-         local item_meta = get_id_card_metadata_table(metadata)
+         local item_meta = id_card_metadata_table.get(metadata)
          --print("Meta: " .. metadata)
          if item_meta.active then
             for _,v in ipairs(item_meta.access) do
@@ -634,7 +634,7 @@ minetest.register_node("spacestation:computer_idcard", {
       local inv = meta:get_inventory()
       local stack = inv:get_stack("input", 1)
       local metadata = stack:get_meta()
-      local item_meta = get_id_card_metadata_table(metadata)
+      local item_meta = id_card_metadata_table.get(metadata)
 
       -- Build list string
 
@@ -643,7 +643,7 @@ minetest.register_node("spacestation:computer_idcard", {
    end,
    on_metadata_inventory_take = function(pos, listname, index, stack, player)
       local meta = minetest.get_meta(pos)
-      local item_meta = get_id_card_metadata_table(meta)
+      local item_meta = id_card_metadata_table.get(meta)
       meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
    end,
    on_receive_fields = function(pos, formname, fields, sender)
@@ -655,7 +655,7 @@ minetest.register_node("spacestation:computer_idcard", {
       end
 
       local metadata = stack:get_meta()
-      local item_meta = get_id_card_metadata_table(metadata)
+      local item_meta = id_card_metadata_table.get(metadata)
       --print(dump(fields))
       
       local cmp_button   = fields["spacestation:computer_idcard_button"]
@@ -683,7 +683,7 @@ minetest.register_node("spacestation:computer_idcard", {
          end
       end
       --print(minetest.serialize(item_meta))
-      set_id_card_metadata_table(metadata, item_meta)
+      id_card_metadata_table.set(metadata, item_meta)
       inv:set_stack("input", 1, stack)
 
 
@@ -751,13 +751,13 @@ local function create_id_card_stack(name, jobTitle, accessList)
    local stack = ItemStack("spacestation:idcard")
    stack:set_count(1)
    local metadata = stack:get_meta()
-   local idCardMeta = get_id_card_metadata_table(metadata)
+   local idCardMeta = id_card_metadata_table.get(metadata)
    for i,v in ipairs(accessList) do
       table.insert(idCardMeta.access, v.name)
    end
    idCardMeta.name = name
    idCardMeta.job_title = jobTitle
-   set_id_card_metadata_table(metadata, idCardMeta)
+   id_card_metadata_table.set(metadata, idCardMeta)
    return stack
 end
 
