@@ -225,6 +225,26 @@ spacestation = {
    access         = access,
 }
 
+-- Metatable functions
+local function get_id_card_metadata_table(metadata)
+   if metadata ~= nil then
+      local text_data = metadata:get_string("id_card")
+      if text_data ~= nil and text_data ~= "" then
+         return minetest.deserialize(text_data)
+      end
+   end
+   return {
+      name = "",
+      active = true,
+      access = {},
+   }
+end
+
+local function set_id_card_metadata_table(metadata, data)
+   local text_data = minetest.serialize(data)
+   metadata:set_string("id_card", text_data)
+end
+
 -- Register nodes
 
 minetest.register_node("spacestation:floor", {
@@ -349,35 +369,22 @@ local function makeDoorOpen(closedDoorName)
       -- Is door access locked
       local meta = minetest.get_meta(pos)
       local lock_var = meta:get_string("lock")
-      local can_open
+      local can_open = false
       -- print(dump(lock_var))
       if lock_var == nil  or lock_var == "" then
          can_open = true
       else
          local wielded_stack = clicker:get_wielded_item()
-         local metadata = wielded_stack:get_metadata()
+         local metadata = wielded_stack:get_meta()
+         local item_meta = get_id_card_metadata_table(metadata)
          --print("Meta: " .. metadata)
-         if metadata == nil or metadata == "" then
-            can_open = false
-         else
-            local item_meta = minetest.deserialize(metadata)
-               --active = false,
-               --access = {},
-            --print("lock: " .. lock_var)
-            --print("dump: " .. dump(item_meta))
-            if item_meta.active then
-               can_open = false
-               for _,v in ipairs(item_meta.access) do
-                  --print("v: " .. v)
-                  if v == lock_var then
-                     can_open = true
-                     break
-                  end
+         if item_meta.active then
+            for _,v in ipairs(item_meta.access) do
+               if v == lock_var then
+                  can_open = true
+                  break
                end
-            else
-               can_open = false
             end
-
          end
       end
 
@@ -579,6 +586,7 @@ local function computer_idcard_build_formspec(item_meta)
    return spec
 end
 
+
 minetest.register_node("spacestation:computer_idcard", {
 	description = "ID Card Computer",
 	tiles = {{ name = "spacestation_computer_idcard.png", backface_culling = true }},
@@ -616,15 +624,8 @@ minetest.register_node("spacestation:computer_idcard", {
       local meta = minetest.get_meta(pos)
       local inv = meta:get_inventory()
       local stack = inv:get_stack("input", 1)
-      local item_meta_str = stack:get_metadata()
-      if item_meta_str == "" then
-         local new_card_meta = {
-            active = false,
-            access = {},
-         }
-         stack:set_metadata(minetest.serialize(new_card_meta))
-      end
-      local item_meta = minetest.deserialize(stack:get_metadata())
+      local metadata = stack:get_meta()
+      local item_meta = get_id_card_metadata_table(metadata)
 
       -- Build list string
 
@@ -633,10 +634,7 @@ minetest.register_node("spacestation:computer_idcard", {
    end,
    on_metadata_inventory_take = function(pos, listname, index, stack, player)
       local meta = minetest.get_meta(pos)
-      local item_meta = {
-         active = false,
-         access = {},
-      }
+      local item_meta = get_id_card_metadata_table(meta)
       meta:set_string("formspec", computer_idcard_build_formspec(item_meta))
    end,
    on_receive_fields = function(pos, formname, fields, sender)
@@ -647,17 +645,9 @@ minetest.register_node("spacestation:computer_idcard", {
          return
       end
 
-      local item_meta_str = stack:get_metadata()
-      local item_meta
+      local metadata = stack:get_meta()
+      local item_meta = get_id_card_metadata_table(metadata)
       --print(dump(fields))
-      if item_meta_str == "" then
-         item_meta = {
-            active = false,
-            access = {},
-         }
-      else
-         item_meta = minetest.deserialize(item_meta_str)
-      end
       
       local cmp_button   = fields["spacestation:computer_idcard_button"]
       local cmp_text     = fields["spacestation:computer_idcard_text"]
@@ -684,7 +674,7 @@ minetest.register_node("spacestation:computer_idcard", {
          end
       end
       --print(minetest.serialize(item_meta))
-      stack:set_metadata(minetest.serialize(item_meta))
+      set_id_card_metadata_table(metadata, item_meta)
       inv:set_stack("input", 1, stack)
 
 
