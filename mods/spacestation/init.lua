@@ -746,6 +746,26 @@ minetest.register_allow_player_inventory_action(function(player, action, invento
 
 end)
 
+local function create_id_card_stack(name, accessList)
+   local stack = ItemStack("spacestation:idcard")
+   stack:set_count(1)
+   local metadata = stack:get_meta()
+   local idCardMeta = get_id_card_metadata_table(metadata)
+   for i,v in ipairs(accessList) do
+      table.insert(idCardMeta.access, v.name)
+   end
+   idCardMeta.name = name
+   set_id_card_metadata_table(metadata, idCardMeta)
+   return stack
+end
+
+minetest.register_on_newplayer(function(ObjectRef)
+   local playerInventory = ObjectRef:get_inventory()
+   local playerInventoryName = ObjectRef:get_wield_list()
+   local idCardStack = create_id_card_stack("Bob Ross", jobs.captain.permissions)
+   playerInventory:set_stack(playerInventoryName, 1, idCardStack)
+end)
+
 local spacestation_path = minetest.get_modpath("spacestation")
 
 dofile(spacestation_path .. "/mapgen.lua")
