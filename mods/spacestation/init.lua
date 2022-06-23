@@ -573,32 +573,61 @@ local btn_text_clear = "Clear"
 
 local function computer_idcard_build_formspec(inventory)
    local target_id_stack = inventory:get_stack("target_id", 1)
-   local target_id_metadata = target_id_stack:get_meta()
-   local target_id_item_meta = id_card_metadata_table.get(target_id_metadata)
+   local target_name = ""
+   local target_job_title = ""
+   local perm_list = ""
+   local checkbox = "false"
+   if not target_id_stack:is_empty() then
+      local target_id_metadata = target_id_stack:get_meta()
+      local target_id_item_meta = id_card_metadata_table.get(target_id_metadata)
+      target_name = target_id_item_meta.name
+      target_job_title = target_id_item_meta.job_title
+      perm_list = minetest.formspec_escape(table.concat(target_id_item_meta.access, "\n"))
+      
+      if target_id_item_meta.active then
+         checkbox = "true"
+      else
+         checkbox = "false"
+      end 
+   end
    
-   local user_id_stack = inventory:get_stack("user_id", 1)
-   local user_id_metadata = user_id_stack:get_meta()
-   local user_id_item_meta = id_card_metadata_table.get(user_id_metadata)
+   local user_name = ""
+   local user_job_title = ""
 
-   local perm_list = minetest.formspec_escape(table.concat(target_id_item_meta.access, "\n"))
+   local user_id_stack = inventory:get_stack("user_id", 1)
+   if not user_id_stack:is_empty() then
+      local user_id_metadata = user_id_stack:get_meta()
+      local user_id_item_meta = id_card_metadata_table.get(user_id_metadata)
+      user_name = user_id_item_meta.name
+      user_job_title = user_id_item_meta.job_title
+   end
+
 
    --print("List:  " .. perm_list .. "\n")
-   local checkbox
-   if target_id_item_meta.active then
-      checkbox = "true"
-   else
-      checkbox = "false"
-   end 
 
-   local spec = "size[10,9]"..
-                "list[context;target_id;0,1;1,1;]"..
-                "textarea[2,1;4,3;spacestation:computer_idcard_text;Permissions;" .. perm_list .. "]"..
-                "button[6,0;2,1;spacestation:computer_idcard_button;" .. btn_text_set .. "]"..
-               -- "button[6,1;3,1;spacestation:computer_idcard_button;" .. btn_text_reset .. "]"..
-                "button[6,2;3,1;spacestation:computer_idcard_button;" .. btn_text_clear .. "]"..
-                "checkbox[6,3;spacestation:computer_idcard_checkbox;Enabled;" .. checkbox .. "]" ..
+
+   local spec = "formspec_version[5]" ..
+                "size[12,10]" ..
+                "label[1,1;User ID:]" ..
+                "list[context;user_id;2.1,0.5;1,1;]" ..
+                "label[3.2,1;Name:]" ..
+                "label[4,1;" .. user_name .. "]" ..
+                "label[8,1;Job:]" ..
+                "label[9,1;" .. user_job_title .. "]" ..
+                "label[1,2;Target ID:]" ..
+                "list[context;target_id;2.1,1.5;1,1;]" ..
+                "label[3.2,2;Name:]" ..
+                "field[4,2;3,0.5;target_name;;" .. target_name .. "]" ..
+                "label[8,2;Job:]" ..
+                "field[9,2;3,0.5;target_job_title;;" .. target_job_title .. "]" ..
+                --"textarea[2,1;4,3;spacestation:computer_idcard_text;Permissions;" .. perm_list .. "]"..
+                --"button[6,0;2,1;spacestation:computer_idcard_button;" .. btn_text_set .. "]"..
+                --"button[6,1;3,1;spacestation:computer_idcard_button;" .. btn_text_reset .. "]"..
+                --"button[6,2;3,1;spacestation:computer_idcard_button;" .. btn_text_clear .. "]"..
+                --"checkbox[6,3;spacestation:computer_idcard_checkbox;Enabled;" .. checkbox .. "]" ..
                 "list[current_player;main;1,5;8,4;]"..
                 "listring[]"
+   print(spec)
    return spec
 end
 
