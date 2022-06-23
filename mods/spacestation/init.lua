@@ -472,7 +472,7 @@ minetest.register_node("spacestation:locker", {
       local meta = minetest.get_meta(pos)
       meta:set_string("formspec",
          "size[8,9]"..
-         "list[current_name;main;0,0;4,1;]"..
+         "list[context;main;0,0;4,1;]"..
          "list[current_player;main;0,5;8,4;]"..
          "listring[]")
       meta:set_string("infotext", "Locker")
@@ -584,7 +584,7 @@ local function computer_idcard_build_formspec(item_meta)
    end 
 
    local spec = "size[10,9]"..
-                "list[current_name;input;0,1;1,1;]"..
+                "list[context;input;0,1;1,1;]"..
                 "textarea[2,1;4,3;spacestation:computer_idcard_text;Permissions;" .. perm_list .. "]"..
                 "button[6,0;2,1;spacestation:computer_idcard_button;" .. btn_text_set .. "]"..
                -- "button[6,1;3,1;spacestation:computer_idcard_button;" .. btn_text_reset .. "]"..
@@ -694,7 +694,7 @@ minetest.register_node("spacestation:computer_idcard", {
    on_rightclick = function(pos, self, clicker, itemstack)
       
       local spec = "size[8,9]"..
-                   "list[current_name;input;0;0;1;1]"..
+                   "list[context;input;0;0;1;1]"..
                    "
       minetest.show_formspec(clicker:get_player_name(), "spacestation:computer_idcard", spec)
       
