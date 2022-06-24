@@ -347,6 +347,17 @@ local function getOtherDoor(pos, doorNode, closedDoorName, openDoorName)
    return otherDoorPos, possibleDoor
 end
    
+local function single_door_set(pos, node, newname)
+   local lockStr = minetest.get_meta(pos):get_string("lock")
+   minetest.swap_node(pos, { 
+      name = newname, 
+      param1 = node.param1, 
+      param2 = node.param2
+   })
+   local timer = minetest.get_node_timer(pos)
+   timer:start(2)
+   minetest:get_meta(pos):set_string("lock")
+end
 
 local function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
    local newname
@@ -355,23 +366,12 @@ local function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
    else
       newname = openDoorName
    end
-   minetest.swap_node(pos, { 
-      name = newname, 
-      param1 = node.param1, 
-      param2 = node.param2
-   })
-   local timer1 = minetest.get_node_timer(pos)
-   timer1:start(2)
+   single_door_set(pos, node, newname)
+   
    
    local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, closedDoorName, openDoorName)
    if otherDoorPos ~= nil then
-      minetest.swap_node(otherDoorPos, { 
-         name = newname, 
-         param1 = otherDoorNode.param1, 
-         param2 = otherDoorNode.param2
-      })
-      local timer2 = minetest.get_node_timer(otherDoorPos)
-      timer2:start(2)
+      single_door_set(otherDoorPos, otherDoorNode, newname)
    end
 
 end
@@ -459,12 +459,7 @@ minetest.register_node("spacestation:door_open", {
    on_rightclick = makeDoorClose("spacestation:door"),
    on_timer = function(pos, elapsed)
       local node = minetest.get_node(pos)
-      node.name = "spacestation:door"
-      minetest.set_node(pos, { 
-         name = "spacestation:door", 
-         param1 = node.param1, 
-         param2 = node.param2
-      })
+      single_door_set(pos, node, "spacestation:door")      
       return false
    end,
 
