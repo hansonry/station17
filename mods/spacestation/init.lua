@@ -508,64 +508,39 @@ minetest.register_on_leaveplayer(function(player)
 end)
 
 
+
 minetest.register_on_player_receive_fields(function(player, formname, fields)
    if formname ~= "spacestation:programmer" then
       return false
    end
    local context = get_context(player)
-   --print(dump(fields))
-   -- If you press esc you only get the exit field
-   local text = fields["spacestation:programmer_text"]
-   if text == nil or context.formspec == nil then
+
+   if context.formspec == nil then
       return false
    end
    local target = context.formspec.target
    context.formspec = nil
-   local meta = minetest.get_meta(target)
+   
+   local function check_for_access_button()
+      for i,v in ipairs(access_ordered) do
+         if fields[v.name] ~= nil then
+            return v
+         end
+      end
+      return nil
+   end
 
-   meta:set_string("lock", fields["spacestation:programmer_text"])
+   local button_clicked = check_for_access_button()
+   
+   if button_clicked ~= nil and target ~= nil then
+   
+      local meta = minetest.get_meta(target)
+
+      meta:set_string("lock", button_clicked.name)
+   end
 
    return true
 end)
-
-minetest.register_craftitem("spacestation:programmer", {
-   description = "Programmer",
-   inventory_image = "spacestation_programmer.png",
-   stack_max = 1,
-   on_use = function(itemstack, user, pointed_thing)
-      if pointed_thing.type ~= "node" then
-         return
-      end
-      --print(dump(pointed_thing))
-      local node_name = minetest.get_node(pointed_thing.under).name
-      --print(node_name)
-      local access_group = minetest.get_item_group(node_name, "access")
-      if access_group >= 1 then
-
-         local meta = minetest.get_meta(pointed_thing.under)
-         local lock_var = meta:get_string("lock")
-         
-         --print(lock_var)
-         if lock_var == nil then
-            lock_var = ""
-         end
-         local context = get_context(user)
-         context.formspec = {
-            target = pointed_thing.under
-         }
-
-         local form = 
-            "formspec_version[5]" ..
-            "size[4,2]" ..
-            "field[0,0;4,1;spacestation:programmer_text;Permission;" .. lock_var .. "]" ..
-            "button_exit[0,1;4,1;spacestation:programmer_button;Program]"
-
-         --print(user:get_player_name())
-         minetest.show_formspec(user:get_player_name(), "spacestation:programmer", form)
-      end
-      return nil
-   end,
-})
 
 local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padding)
    hori_spacing = hori_spacing or 0.1
@@ -628,13 +603,13 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
                end
                next_x = next_x + width
                cell_height = 0.75
-            elseif cellType == "button" then
+            elseif cellType == "button" or cellType == "button_exit" then
                local width = cell_v[2]
                local name  = cell_v[3]
                local text  = cell_v[4]
                formStr = formStr ..
-                         f("button[%.3f,%.3f;%.3f,%.3f;%s;%s]", 
-                           next_x, next_y, width, 0.75, name, text) 
+                         f("%s[%.3f,%.3f;%.3f,%.3f;%s;%s]", 
+                           cellType, next_x, next_y, width, 0.75, name, text) 
                next_x = next_x + width
                cell_height = 0.75
             elseif cellType == "checkbox" then
@@ -663,6 +638,70 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
           f("size[%.3f,%.3f]", max_x + page_padding, next_y + page_padding) ..
           formStr
 end
+
+
+
+minetest.register_craftitem("spacestation:programmer", {
+   description = "Programmer",
+   inventory_image = "spacestation_programmer.png",
+   stack_max = 1,
+   on_use = function(itemstack, user, pointed_thing)
+      if pointed_thing.type ~= "node" then
+         return
+      end
+      --print(dump(pointed_thing))
+      local node_name = minetest.get_node(pointed_thing.under).name
+      --print(node_name)
+      local access_group = minetest.get_item_group(node_name, "access")
+      if access_group >= 1 then
+         local function insert_access_buttons(data, button_type, max_line_size)
+            local buttons = {}
+            local line_size = 0
+            max_line_size = max_line_size or 15
+            button_type = button_type or "button"
+            for i,v in ipairs(access_ordered) do
+               local size = (#v.name) * 0.2
+               table.insert(buttons, {button_type, size, v.name, v.name})
+               line_size = line_size + size
+               if line_size > max_line_size then
+                  line_size = 0
+                  table.insert(data, buttons)
+                  buttons = {}
+               end
+            end
+            if #buttons > 0 then
+               table.insert(data, buttons)
+            end
+         end
+
+         local door_meta = minetest.get_meta(pointed_thing.under)
+         local lock_var = door_meta:get_string("lock")
+         
+         --print(lock_var)
+         if lock_var == nil then
+            lock_var = ""
+         end
+         local context = get_context(user)
+         
+         local data = {}
+         table.insert(data, {
+            { "label", 10, lock_var }
+         })
+         insert_access_buttons(data, "button_exit")
+         
+         context.formspec = {
+            target = pointed_thing.under
+         }
+
+         local form = formspec_builder(data)
+
+         --print(user:get_player_name())
+         minetest.show_formspec(user:get_player_name(), "spacestation:programmer", form)
+      end
+      return nil
+   end,
+})
+
 
 local function computer_idcard_build_formspec(inventory)
    local target_id_stack = inventory:get_stack("target_id", 1)
@@ -696,18 +735,18 @@ local function computer_idcard_build_formspec(inventory)
       user_name = user_id_item_meta.name
       user_job_title = user_id_item_meta.job_title
    end
-
-
    --print("List:  " .. perm_list .. "\n")
 
-   local function insert_job_buttons(data)
+   local function insert_job_buttons(data, button_type, max_line_size)
       local buttons = {}
       local line_size = 0
+      max_line_size = max_line_size or 15
+      button_type = button_type or "button"
       for i,v in ipairs(jobs_ordered) do
          local size = (#v.name) * 0.2
-         table.insert(buttons, {"button", size, v.name, v.name})
+         table.insert(buttons, {button_type, size, v.name, v.name})
          line_size = line_size + size
-         if line_size > 15 then
+         if line_size > max_line_size then
             line_size = 0
             table.insert(data, buttons)
             buttons = {}
@@ -776,7 +815,7 @@ local function computer_idcard_build_formspec(inventory)
 
    local spec = formspec_builder(data)
 
-   print(spec)
+   --print(spec)
    return spec
 end
 
@@ -843,7 +882,6 @@ minetest.register_node("spacestation:computer_idcard", {
       local target_id_data = id_card_metadata_table.get(target_id_meta)
 
 
-      
       local function check_for_button()
          for i,v in ipairs(jobs_ordered) do
             if fields[v.name] ~= nil then
@@ -867,7 +905,7 @@ minetest.register_node("spacestation:computer_idcard", {
       target_id_data.job_title = fields["target_job_title"] or target_id_data.job_title
       target_id_data.active = true
       
-      local job_button = check_for_button()
+      local job_button = check_for_button(fields)
       local access_checkbox = check_for_checkbox()
       if job_button ~= nil then
          target_id_data.access = {}
@@ -877,7 +915,8 @@ minetest.register_node("spacestation:computer_idcard", {
          target_id_data.job_title = job_button.name
          
       elseif access_checkbox ~= nil then
-         local checkbox_value = fields[access_checkbox.name] or false
+         local checkbox_value_str = fields[access_checkbox.name] or "false"
+         local checkbox_value = checkbox_value_str == "true" and true or false
          local foundIndex = nil
          for i,v in ipairs(target_id_data.access) do
             if v == access_checkbox.name then
@@ -894,7 +933,7 @@ minetest.register_node("spacestation:computer_idcard", {
             if foundIndex ~= nil then
                table.remove(target_id_data.access, foundIndex)
             end
-         end         
+         end
       end   
       
       --print(minetest.serialize(target_id_data))
