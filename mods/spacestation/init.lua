@@ -227,7 +227,7 @@ spacestation = {
 
 -- Metatable functions
 
-local function create_metatable_functions(metatable_key, create_new_table_function)
+local function create_metatable_functions(metatable_key, create_new_table_function, extra_set_function)
    local function get_metadata_table(metadata)
       if metadata ~= nil then
          local text_data = metadata:get_string(metatable_key)
@@ -241,6 +241,9 @@ local function create_metatable_functions(metatable_key, create_new_table_functi
    local function set_metadata_table(metadata, data)
       local text_data = minetest.serialize(data)
       metadata:set_string(metatable_key, text_data)
+      if extra_set_function ~= nil then
+         extra_set_function(metadata, data)
+      end
    end
    return {get = get_metadata_table, set = set_metadata_table}
 end
@@ -252,7 +255,16 @@ local id_card_metadata_table = create_metatable_functions("id_card", function()
       active = true,
       access = {},
    }
+end,
+function(metadata, data)
+   local descriptionStr = "ID Card"
+   if data.name then
+      print(data.name)
+      descriptionStr = data.name
+   end
+   metadata:set_string("description", descriptionStr)
 end)
+
 
 -- Register nodes
 
