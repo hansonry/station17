@@ -879,6 +879,16 @@ minetest.register_node("spacestation:computer_idcard", {
       meta:set_string("formspec", formspec_str)
       
    end,
+   on_metadata_inventory_move = function(pos, listname, index, stack2, player)
+      local meta = minetest.get_meta(pos)
+      local inv = meta:get_inventory()
+
+      local formspec_str = computer_idcard_build_formspec(inv)
+      -- Build list string
+
+      meta:set_string("formspec", formspec_str)
+      
+   end,
    on_metadata_inventory_take = function(pos, listname, index, stack, player)
       local meta = minetest.get_meta(pos)
       local inv = meta:get_inventory()
