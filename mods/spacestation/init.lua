@@ -681,30 +681,49 @@ local function computer_idcard_build_formspec(inventory)
 
    --print("List:  " .. perm_list .. "\n")
 
-   local data = {
-      {
-         {"label", 1.5, "User ID:"},
-         {"list",  1, 1, "context", "user_id"},
-         {"label", 1, "Name:"},
-         {"label", 3, user_name},
-         {"label", 1, "Job:"},
-         {"label", 4, user_job_title}, 
-      },
-      {
-         {"label", 1.5, "Target ID:"},
-         {"list",  1, 1, "context", "target_id"},
-         {"label", 1, "Name:"},
-         {"field", 3, "target_name", target_name},
-         {"label", 1, "Job:"},
-         {"field", 4, "target_job_title", target_job_title}, 
-      },
-      0.5,
-      {
-         {"button", 4, "captain", "Captain"}
-      },
-      0.5,
-      "player_inventory"
-   }
+   local function insert_buttons(data)
+      local buttons = {}
+      local line_size = 0
+      for i,v in ipairs(jobs_ordered) do
+         local size = (#v.name) * 0.2
+         table.insert(buttons, {"button", size, v.name, v.name})
+         line_size = line_size + size
+         if line_size > 15 then
+            line_size = 0
+            table.insert(data, buttons)
+            buttons = {}
+         end
+      end
+      if #buttons > 0 then
+         table.insert(data, buttons)
+      end
+   end
+
+   local data = {}
+   table.insert(data, {
+      {"label", 1.5, "User ID:"},
+      {"list",  1, 1, "context", "user_id"},
+      {"label", 1, "Name:"},
+      {"label", 3, user_name},
+      {"label", 1, "Job:"},
+      {"label", 4, user_job_title}, 
+   })
+   table.insert(data, {
+      {"label", 1.5, "Target ID:"},
+      {"list",  1, 1, "context", "target_id"},
+      {"label", 1, "Name:"},
+      {"field", 3, "target_name", target_name},
+      {"label", 1, "Job:"},
+      {"field", 4, "target_job_title", target_job_title}, 
+   })
+   table.insert(data, 0.5)
+   insert_buttons(data)
+   --table.insert(data, {
+   --   {"button", 4, "captain", "Captain"}
+   --})
+   table.insert(data, 0.5)
+   table.insert(data, "player_inventory")
+
    local spec = formspec_builder(data)
 
    local spec2 = "formspec_version[5]" ..
