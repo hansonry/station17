@@ -516,7 +516,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
    local context = get_context(player)
 
    if context.formspec == nil then
-      return false
+      return true
    end
    local target = context.formspec.target
    context.formspec = nil
@@ -529,14 +529,29 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
       end
       return nil
    end
-
+   
    local button_clicked = check_for_access_button()
    
-   if button_clicked ~= nil and target ~= nil then
-   
-      local meta = minetest.get_meta(target)
+  
+   if button_clicked == nil then
+      return true
+   end
 
-      meta:set_string("lock", button_clicked.name)
+   local node = minetest.get_node(target)
+   local access_group = minetest.get_item_group(node.name, "access")
+   if not (access_group >= 1) then
+      return true
+   end
+
+   local meta = minetest.get_meta(target)
+
+   meta:set_string("lock", button_clicked.name)
+   
+   local otherDoorPos, _ = getOtherDoor(target, node, 
+                                  "spacestation:door", "spacestation:door_open")
+   if otherDoorPos ~= nil then
+      local otherDoorMeta = minetest.get_meta(otherDoorPos)
+      otherDoorMeta:set_string("lock", button_clicked.name)
    end
 
    return true
