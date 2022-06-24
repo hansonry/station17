@@ -359,7 +359,7 @@ local function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
       name = newname, 
       param1 = node.param1, 
       param2 = node.param2
-      })
+   })
    local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, closedDoorName, openDoorName)
    if otherDoorPos ~= nil then
       minetest.swap_node(otherDoorPos, { 
