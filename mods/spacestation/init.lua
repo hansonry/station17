@@ -360,13 +360,18 @@ local function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
       param1 = node.param1, 
       param2 = node.param2
    })
+   local timer1 = minetest.get_node_timer(pos)
+   timer1:start(2)
+   
    local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, closedDoorName, openDoorName)
    if otherDoorPos ~= nil then
       minetest.swap_node(otherDoorPos, { 
          name = newname, 
          param1 = otherDoorNode.param1, 
          param2 = otherDoorNode.param2
-         })
+      })
+      local timer2 = minetest.get_node_timer(otherDoorPos)
+      timer2:start(2)
    end
 
 end
@@ -413,7 +418,7 @@ end
 
 
 minetest.register_node("spacestation:door", {
-	description = "Space Station Interal Door",
+	description = "Space Station internal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
 	--inventory_image = "spacestation_door.png",	
 	groups = {cracky=3, access=1},
@@ -434,7 +439,7 @@ minetest.register_node("spacestation:door", {
 })
 
 minetest.register_node("spacestation:door_open", {
-	description = "Space Station Interal Door",
+	description = "Space Station internal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
 	--inventory_image = "spacestation_door.png",	
 	groups = {cracky=3, access=1},
@@ -452,6 +457,17 @@ minetest.register_node("spacestation:door_open", {
 	mesh = "door_c_open.obj",
 	sounds = default.node_sound_stone_defaults(),
    on_rightclick = makeDoorClose("spacestation:door"),
+   on_timer = function(pos, elapsed)
+      local node = minetest.get_node(pos)
+      node.name = "spacestation:door"
+      minetest.set_node(pos, { 
+         name = "spacestation:door", 
+         param1 = node.param1, 
+         param2 = node.param2
+      })
+      return false
+   end,
+
 })
 
 minetest.register_node("spacestation:locker", {
