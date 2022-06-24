@@ -877,14 +877,25 @@ minetest.register_node("spacestation:computer_idcard", {
       local meta = minetest.get_meta(pos)
       
       meta:set_string("infotext", "ID Computer")
-      meta:set_string("text_field", "")
-      meta:set_int("index", 1)
       
       local inv = meta:get_inventory()
       inv:set_size("target_id", 1)
       inv:set_size("user_id", 1)
       
       meta:set_string("formspec", computer_idcard_build_formspec(inv))
+   end,
+   on_destruct = function(pos)
+      local meta = minetest.get_meta(pos)
+      local inv = meta:get_inventory()
+
+      local function dropId(inv_location)
+         if not inv:is_empty(inv_location) then
+            minetest.item_drop(inv:get_stack(inv_location, 1), nil, pos)
+         end
+      end
+      dropId("target_id")
+      dropId("user_id")
+      
    end,
    allow_metadata_inventory_put = function(pos, listname, index, stack, player)
       if stack:get_name() == "spacestation:idcard" then
