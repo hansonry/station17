@@ -16,7 +16,7 @@ end
 local access_ordered = {
    { name = "Command" },
    { name = "Captain Office" },
-   { name = "Head Of Personel Office" },
+   { name = "Head Of Personnel Office" },
    { name = "Security" },
    { name = "Head Of Security Office" },
    { name = "Cargo" },
@@ -45,7 +45,7 @@ local jobs_ordered = {
       permissions = { 
          access.command, 
          access.captain_office,
-         access.head_of_personel_office,
+         access.head_of_personnel_office,
          access.security,
          access.head_of_security_office,
          access.cargo,
@@ -68,7 +68,7 @@ local jobs_ordered = {
       name = "Head Of Personel",
       permissions = { 
          access.command, 
-         access.head_of_personel_office,
+         access.head_of_personnel_office,
          access.security,
          access.kitchen,
          access.botany,
