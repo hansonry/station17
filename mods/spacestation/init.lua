@@ -248,22 +248,23 @@ local function create_metatable_functions(metatable_key, create_new_table_functi
    return {get = get_metadata_table, set = set_metadata_table}
 end
 
-local id_card_metadata_table = create_metatable_functions("id_card", function()
-   return {
-      name = "",
-      job_title = "",
-      active = true,
-      access = {},
-   }
-end,
-function(metadata, data)
-   local descriptionStr = "ID Card"
-   if data.name then
-      print(data.name)
-      descriptionStr = data.name
-   end
-   metadata:set_string("description", descriptionStr)
-end)
+local id_card_metadata_table = create_metatable_functions("id_card", 
+   function()
+      return {
+         name = "",
+         job_title = "",
+         active = true,
+         access = {},
+      }
+   end,
+   function(metadata, data)
+      local descriptionStr = "ID Card"
+      if data.name then
+         print(data.name)
+         descriptionStr = data.name
+      end
+      metadata:set_string("description", descriptionStr)
+   end)
 
 
 -- Register nodes
