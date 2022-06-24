@@ -615,9 +615,17 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
                local width = cell_v[2]
                local name  = cell_v[3]
                local text  = cell_v[4]
+               local closeOnEnter = cell_v[5] == nil and true or cell_v[5]
+               
                formStr = formStr ..
                          f("field[%.3f,%.3f;%.3f,%.3f;%s;;%s]",
                            next_x, next_y + 0.25, width, 0.5, name, text)
+               -- Default value for close on enter is true, 
+               -- so only create an entery when false
+               if not closeOnEnter then
+                  formStr = formStr ..
+                            f("field_close_on_enter[%s;false]", name)
+               end
                next_x = next_x + width
                cell_height = 0.75
             elseif cellType == "button" then
@@ -629,6 +637,19 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
                            next_x, next_y, width, 0.75, name, text) 
                next_x = next_x + width
                cell_height = 0.75
+            elseif cellType == "checkbox" then
+               local width = cell_v[2]
+               local name  = cell_v[3]
+               local text  = cell_v[4]
+               local value = cell_v[5] or false
+               local valueStr = value and "true" or "false"
+               formStr = formStr ..
+                         f("checkbox[%.3f,%.3f;%s;%s;%s]", 
+                           next_x, next_y + 0.5, name, text, valueStr) 
+               next_x = next_x + width
+               cell_height = 0.75
+            else
+               assert(true, f("Unknown cell type: %s", cellType))
             end
             next_x = next_x + virt_spacing
             if cell_height > row_height then row_height = cell_height end
@@ -643,19 +664,16 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
           formStr
 end
 
-local btn_text_set   = "Set"
-local btn_text_reset = "Reset"
-local btn_text_clear = "Clear"
-
 local function computer_idcard_build_formspec(inventory)
    local target_id_stack = inventory:get_stack("target_id", 1)
    local target_name = ""
    local target_job_title = ""
    local perm_list = ""
    local checkbox = "false"
+   local target_id_item_meta = nil
    if not target_id_stack:is_empty() then
       local target_id_metadata = target_id_stack:get_meta()
-      local target_id_item_meta = id_card_metadata_table.get(target_id_metadata)
+      target_id_item_meta = id_card_metadata_table.get(target_id_metadata)
       target_name = target_id_item_meta.name
       target_job_title = target_id_item_meta.job_title
       perm_list = minetest.formspec_escape(table.concat(target_id_item_meta.access, "\n"))
@@ -669,11 +687,12 @@ local function computer_idcard_build_formspec(inventory)
    
    local user_name = ""
    local user_job_title = ""
-
+   local user_id_item_meta = nil
+   
    local user_id_stack = inventory:get_stack("user_id", 1)
    if not user_id_stack:is_empty() then
       local user_id_metadata = user_id_stack:get_meta()
-      local user_id_item_meta = id_card_metadata_table.get(user_id_metadata)
+      user_id_item_meta = id_card_metadata_table.get(user_id_metadata)
       user_name = user_id_item_meta.name
       user_job_title = user_id_item_meta.job_title
    end
@@ -681,7 +700,7 @@ local function computer_idcard_build_formspec(inventory)
 
    --print("List:  " .. perm_list .. "\n")
 
-   local function insert_buttons(data)
+   local function insert_job_buttons(data)
       local buttons = {}
       local line_size = 0
       for i,v in ipairs(jobs_ordered) do
@@ -698,6 +717,36 @@ local function computer_idcard_build_formspec(inventory)
          table.insert(data, buttons)
       end
    end
+   
+   local function insert_access_checks(data)
+      local checkboxs = {}
+      local line_size = 0
+      local function has_access(access)
+         if target_id_item_meta == nil then
+            return false
+         end
+         for i, v in ipairs(target_id_item_meta.access) do
+            if access.name == v then
+               return true
+            end
+         end
+         return false
+      end
+      for i,v in ipairs(access_ordered) do
+         local size = (#v.name) * 0.15 + 0.3
+         local hasAccess = has_access(v)
+         table.insert(checkboxs, {"checkbox", size, v.name, v.name, hasAccess})
+         line_size = line_size + size
+         if line_size > 15 then
+            line_size = 0
+            table.insert(data, checkboxs)
+            checkboxs = {}
+         end
+      end
+      if #checkboxs > 0 then
+         table.insert(data, checkboxs)
+      end
+   end
 
    local data = {}
    table.insert(data, {
@@ -712,41 +761,21 @@ local function computer_idcard_build_formspec(inventory)
       {"label", 1.5, "Target ID:"},
       {"list",  1, 1, "context", "target_id"},
       {"label", 1, "Name:"},
-      {"field", 3, "target_name", target_name},
+      {"field", 3, "target_name", target_name, false},
       {"label", 1, "Job:"},
-      {"field", 4, "target_job_title", target_job_title}, 
+      {"field", 4, "target_job_title", target_job_title, false}, 
    })
    table.insert(data, 0.5)
-   insert_buttons(data)
-   --table.insert(data, {
-   --   {"button", 4, "captain", "Captain"}
-   --})
+   insert_job_buttons(data)
+
+   table.insert(data, 0.5)
+   insert_access_checks(data)
+   
    table.insert(data, 0.5)
    table.insert(data, "player_inventory")
 
    local spec = formspec_builder(data)
 
-   local spec2 = "formspec_version[5]" ..
-                "size[12,10]" ..
-                "label[1,1;User ID:]" ..
-                "list[context;user_id;2.1,0.5;1,1;]" ..
-                "label[3.2,1;Name:]" ..
-                "label[4,1;" .. user_name .. "]" ..
-                "label[8,1;Job:]" ..
-                "label[9,1;" .. user_job_title .. "]" ..
-                "label[1,2;Target ID:]" ..
-                "list[context;target_id;2.1,1.5;1,1;]" ..
-                "label[3.2,2;Name:]" ..
-                "field[4,2;3,0.5;target_name;;" .. target_name .. "]" ..
-                "label[8,2;Job:]" ..
-                "field[9,2;3,0.5;target_job_title;;" .. target_job_title .. "]" ..
-                --"textarea[2,1;4,3;spacestation:computer_idcard_text;Permissions;" .. perm_list .. "]"..
-                --"button[6,0;2,1;spacestation:computer_idcard_button;" .. btn_text_set .. "]"..
-                --"button[6,1;3,1;spacestation:computer_idcard_button;" .. btn_text_reset .. "]"..
-                --"button[6,2;3,1;spacestation:computer_idcard_button;" .. btn_text_clear .. "]"..
-                --"checkbox[6,3;spacestation:computer_idcard_checkbox;Enabled;" .. checkbox .. "]" ..
-                "list[current_player;main;1,5;8,4;]"..
-                "listring[]"
    print(spec)
    return spec
 end
@@ -802,45 +831,75 @@ minetest.register_node("spacestation:computer_idcard", {
       meta:set_string("formspec", computer_idcard_build_formspec(inv))
    end,
    on_receive_fields = function(pos, formname, fields, sender)
+      
       local meta = minetest.get_meta(pos)
       local inv = meta:get_inventory()
-      local stack = inv:get_stack("target_id", 1)
-      if stack:get_name() ~= "spacestation:idcard" then
+      local target_id_stack = inv:get_stack("target_id", 1)
+      if target_id_stack:get_name() ~= "spacestation:idcard" then
          return
       end
 
-      local metadata = stack:get_meta()
-      local item_meta = id_card_metadata_table.get(metadata)
-      --print(dump(fields))
-      
-      local cmp_button   = fields["spacestation:computer_idcard_button"]
-      local cmp_text     = fields["spacestation:computer_idcard_text"]
-      local cmp_checkbox = fields["spacestation:computer_idcard_checkbox"]
-      local cmp_text_out = cmp_text
-      
-      local cmp_index = nil
-      if cmp_button == btn_text_set then
-         local perm
-         item_meta.access = {}
-         for perm in  string.gmatch(cmp_text, "%S+") do
-            table.insert(item_meta.access, perm)
-         end
-         --print(dump(item_meta))
-      elseif cmp_button == btn_text_reset then
-         -- Maybe I dont need to do anything here
-      elseif cmp_button == btn_text_clear then
-         item_meta.access = {}
-      elseif cmp_checkbox ~= nil then
-         if cmp_checkbox == "true" then
-            item_meta.active = true
-         else
-            item_meta.active = false
-         end
-      end
-      --print(minetest.serialize(item_meta))
-      id_card_metadata_table.set(metadata, item_meta)
-      inv:set_stack("target_id", 1, stack)
+      local target_id_meta = target_id_stack:get_meta()
+      local target_id_data = id_card_metadata_table.get(target_id_meta)
 
+
+      
+      local function check_for_button()
+         for i,v in ipairs(jobs_ordered) do
+            if fields[v.name] ~= nil then
+               return v
+            end
+         end
+         return nil
+      end
+      
+      local function check_for_checkbox()
+         for i,v in ipairs(access_ordered) do
+            if fields[v.name] ~= nil then
+               return v
+            end
+         end
+         return nil
+      end
+
+
+      target_id_data.name = fields["target_name"] or target_id_data.name
+      target_id_data.job_title = fields["target_job_title"] or target_id_data.job_title
+      target_id_data.active = true
+      
+      local job_button = check_for_button()
+      local access_checkbox = check_for_checkbox()
+      if job_button ~= nil then
+         target_id_data.access = {}
+         for i,v in ipairs(job_button.permissions) do
+            table.insert(target_id_data.access, v.name)
+         end
+         target_id_data.job_title = job_button.name
+         
+      elseif access_checkbox ~= nil then
+         local checkbox_value = fields[access_checkbox.name] or false
+         local foundIndex = nil
+         for i,v in ipairs(target_id_data.access) do
+            if v == access_checkbox.name then
+               foundIndex = i
+               break
+            end
+         end
+
+         if checkbox_value then
+            if foundIndex == nil then
+               table.insert(target_id_data.access, access_checkbox.name)
+            end
+         else
+            if foundIndex ~= nil then
+               table.remove(target_id_data.access, foundIndex)
+            end
+         end         
+      end   
+      
+      --print(minetest.serialize(target_id_data))
+      id_card_metadata_table.set(target_id_meta, target_id_data)
+      inv:set_stack("target_id", 1, target_id_stack)
 
       meta:set_string("formspec", computer_idcard_build_formspec(inv))
 
