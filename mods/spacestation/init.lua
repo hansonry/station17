@@ -571,6 +571,7 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
    hori_spacing = hori_spacing or 0.1
    virt_spacing = virt_spacing or 0.1
    page_padding = page_padding or 0.5
+   local invGridScale = 1.2
    local next_x = page_padding
    local next_y = page_padding
    local max_x = next_x
@@ -584,7 +585,10 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
                    f("list[current_player;main;%.3f,%.3f;8,4;]", 
                      next_x, next_y) ..
                    "listring[]"
-         row_height = 4 
+         row_height = 4 * invGridScale
+         next_x = next_x + 8 * invGridScale 
+      elseif type(row_v) == "number" then
+         row_height = row_v
       else
          for cell_i, cell_v in ipairs(row_v) do
             local cell_height = 0
@@ -594,7 +598,7 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
                local text  = cell_v[3]
                formStr = formStr ..
                          f("label[%.3f,%.3f;%s]", 
-                           next_x, next_y, text)
+                           next_x, next_y + 0.5, text)
                next_x = next_x + width
                cell_height = 1
             elseif cellType == "list" then
@@ -605,17 +609,26 @@ local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padd
                formStr = formStr ..
                          f("list[%s;%s;%.3f,%.3f;%d,%d;]",
                            location, name, next_x, next_y, width, height)
-               next_x = next_x + width
-               cell_height = height
+               next_x = next_x + width * invGridScale
+               cell_height = height * invGridScale
             elseif cellType == "field" then
                local width = cell_v[2]
                local name  = cell_v[3]
                local text  = cell_v[4]
                formStr = formStr ..
                          f("field[%.3f,%.3f;%.3f,%.3f;%s;;%s]",
-                           next_x, next_y, width, 0.5, name, text)
+                           next_x, next_y + 0.25, width, 0.5, name, text)
                next_x = next_x + width
-               cell_height = 0.5
+               cell_height = 0.75
+            elseif cellType == "button" then
+               local width = cell_v[2]
+               local name  = cell_v[3]
+               local text  = cell_v[4]
+               formStr = formStr ..
+                         f("button[%.3f,%.3f;%.3f,%.3f;%s;%s]", 
+                           next_x, next_y, width, 0.75, name, text) 
+               next_x = next_x + width
+               cell_height = 0.75
             end
             next_x = next_x + virt_spacing
             if cell_height > row_height then row_height = cell_height end
@@ -685,6 +698,11 @@ local function computer_idcard_build_formspec(inventory)
          {"label", 1, "Job:"},
          {"field", 4, "target_job_title", target_job_title}, 
       },
+      0.5,
+      {
+         {"button", 4, "captain", "Captain"}
+      },
+      0.5,
       "player_inventory"
    }
    local spec = formspec_builder(data)
