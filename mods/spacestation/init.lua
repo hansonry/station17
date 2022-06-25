@@ -65,7 +65,7 @@ local jobs_ordered = {
       } 
    },
    { 
-      name = "Head Of Personel",
+      name = "Head Of Personnel",
       permissions = { 
          access.command, 
          access.head_of_personnel_office,
@@ -260,7 +260,6 @@ local id_card_metadata_table = create_metatable_functions("id_card",
    function(metadata, data)
       local descriptionStr = "ID Card"
       if data.name then
-         print(data.name)
          descriptionStr = data.name
       end
       metadata:set_string("description", descriptionStr)
@@ -1027,6 +1026,7 @@ sfinv.register_page("spacestation:equipment", {
 minetest.register_on_joinplayer(function(player)
    local inv = player:get_inventory()
    inv:set_size("idcard", 1)
+   --inv:set_size("main", 2)
 end)
 
 minetest.register_allow_player_inventory_action(function(player, action, inventory, inventory_info)
