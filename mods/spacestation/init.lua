@@ -1024,9 +1024,14 @@ sfinv.register_page("spacestation:equipment", {
 })
 
 minetest.register_on_joinplayer(function(player)
+   local isCreative = minetest.is_creative_enabled(player:get_player_name())
    local inv = player:get_inventory()
    inv:set_size("idcard", 1)
-   --inv:set_size("main", 2)
+   if isCreative then
+      inv:set_size("main", 8 * 4)
+   else
+      inv:set_size("main", 2)
+   end
 end)
 
 minetest.register_allow_player_inventory_action(function(player, action, inventory, inventory_info)
@@ -1085,4 +1090,5 @@ local spacestation_path = minetest.get_modpath("spacestation")
 
 dofile(spacestation_path .. "/mapgen.lua")
 dofile(spacestation_path .. "/skybox.lua")
+dofile(spacestation_path .. "/inventory.lua")
 
