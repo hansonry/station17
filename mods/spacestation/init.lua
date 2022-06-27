@@ -332,72 +332,127 @@ local function getOffset(facingDir)
    return offset
 end
 
-
-
-local function getOtherDoor(pos, doorNode, closedDoorName, openDoorName)
-   -- param2 should be facing dir
-   -- 0 = z; 1 = x; 2 = -z; 3 = -x
-   local offset = getOffset(doorNode.param2)
-   if offset == nil then
-      return nil, nil
-   end
-   local otherDoorPos = vector.add(pos, offset)
-   local possibleDoor = minetest.get_node(otherDoorPos)
-   if possibleDoor ~= nil and 
-      possibleDoor.name ~= closedDoorName and
-      possibleDoor.name ~= openDoorName then
-      return nil, nil
-   end
-   local otherDoorOffset = getOffset(possibleDoor.param2)
-   if otherDoorOffset == nil then
-      return nil, nil
-   end
-   local offsetSum = vector.add(offset, otherDoorOffset)
-   if not vector.equals(offsetSum, vector.new(0,0,0)) then 
-      return nil, nil
-   end
-   return otherDoorPos, possibleDoor
-end
-   
-local function single_door_set(pos, node, newname)
-   local lockStr = minetest.get_meta(pos):get_string("lock")
-   minetest.swap_node(pos, { 
-      name = newname, 
-      param1 = node.param1, 
-      param2 = node.param2
-   })
-   local timer = minetest.get_node_timer(pos)
-   timer:start(2)
-   minetest:get_meta(pos):set_string("lock")
-end
-
-local function doorToggle(pos, node, clicker, closedDoorName, openDoorName)
-   local newname
-   if node.name == openDoorName then
-      newname = closedDoorName
-   else
-      newname = openDoorName
-   end
-   single_door_set(pos, node, newname)
-   
-   
-   local otherDoorPos, otherDoorNode = getOtherDoor(pos, node, closedDoorName, openDoorName)
-   if otherDoorPos ~= nil then
-      single_door_set(otherDoorPos, otherDoorNode, newname)
-   end
-
+local function ends_with(str, ending)
+   return ending == "" or str:sub(-#ending) == ending
 end
 
 
-local function makeDoorOpen(closedDoorName)
+local function get_door_info(pos)
+   local node = minetest.get_node(pos)
+   local door_flags = minetest.get_item_group(node.name, "door")
+   local can_be_double_door = door_flags == 3 or door_flags == 2
+   local can_be_single_door = door_flags == 3 or door_flags == 1
+   local is_door = can_be_single_door or can_be_double_door
+   if not is_door then
+      return nil
+   end
+   local is_open = ends_with(node.name, "_open")
+   local door_close_name = node.name
+   if is_open then
+      door_close_name = node.name:sub(0, #node.name - 5)
+   end
+   local door_info = {
+      node         = node,
+      pos          = pos,
+      is_id_locked = minetest.get_item_group(node.name, "id_locked") >= 1,
+      is_open      = is_open,
+      name_close   = door_close_name,
+      name_open    = door_close_name .. "_open",
+      is_double    = false
+   }
+  
+   if door_info.is_id_locked then
+      local metadata = minetest.get_meta(pos)
+      if metadata ~= nil then
+         local lock = metadata:get_string("lock")
+         if lock ~= nil and lock ~= "" then
+            door_info.lock = lock
+         end
+      end
+   end
+ 
+   if not can_be_double_door then return door_info end
 
+   local offset = getOffset(node.param2)
+
+   if offset == nil then return door_info end
+   local other_door_pos = vector.add(pos, offset)
+   local other_door_node = minetest.get_node(other_door_pos)
+   if other_door_node.name ~= door_info.name_close and 
+      other_door_node.name ~= door_info.name_open then
+      return door_info
+   end
+   local other_door_flags = minetest.get_item_group(other_door_node.name, "door")
+   if other_door_flags == 0 or other_door_flags == 1 then
+      -- If not a door or only a single door or the door name doesn't match
+      return door_info
+   end
+   local other_door_offset = getOffset(other_door_node.param2)
+   local offset_sum = vector.add(other_door_offset, offset)
+   if not vector.equals(offset_sum, vector.new(0, 0, 0)) then
+      -- If not facing each other, then this is a single door
+      return door_info
+   end
+
+   door_info.is_double = true
+   door_info.other_door = {
+      node    = other_door_node,
+      pos     = other_door_pos,
+      is_open = other_door_node.name == door_info.name_open,
+   }
+
+   return door_info
+end
+
+local function door_open(door_info, open_connected)
+   local function open_a_door(door_info, open_door_name, lock)
+      if not door_info.is_open then
+         minetest.swap_node(door_info.pos, { 
+            name = open_door_name, 
+            param1 = door_info.node.param1, 
+            param2 = door_info.node.param2
+         })
+         local timer = minetest.get_node_timer(door_info.pos)
+         timer:start(2)
+         if lock ~= nil then
+            minetest:get_meta(door_info.pos):set_string("lock", lock)
+         end
+      end
+   end
+   if open_connected == nil then open_connected = true end
+   open_a_door(door_info, door_info.name_open, door_info.lock)
+   if door_info.is_double and open_connected then
+      open_a_door(door_info.other_door, door_info.name_open, door_info.lock)
+   end
+end
+
+local function door_close(door_info, close_connected)
+   local function close_a_door(door_info, close_door_name, lock)
+      if door_info.is_open then
+         minetest.swap_node(door_info.pos, { 
+            name = close_door_name, 
+            param1 = door_info.node.param1, 
+            param2 = door_info.node.param2
+         })
+         if lock ~= nil then
+            minetest:get_meta(door_info.pos):set_string("lock", lock)
+         end
+      end
+   end
+   if close_connected == nil then close_connected = true end
+   close_a_door(door_info, door_info.name_close, door_info.lock)
+   if door_info.is_double and close_connected then
+      close_a_door(door_info.other_door, door_info.name_close, door_info.lock)
+   end
+end
+
+local function makeDoorOpen()
    local function doorOpen(pos, node, clicker)
+      local door_info = get_door_info(pos)
       -- Is door access locked
-      local meta = minetest.get_meta(pos)
-      local lock_var = meta:get_string("lock")
       local can_open = false
       -- print(dump(lock_var))
-      if lock_var == nil  or lock_var == "" then
+      if door_info.lock == nil then
          can_open = true
       else
          local function is_id_card_stack(stack)
@@ -412,7 +467,7 @@ local function makeDoorOpen(closedDoorName)
             local idcard_meta = id_card_metadata_table.get(metadata)
             if idcard_meta.active then
                for _,v in ipairs(idcard_meta.access) do
-                  if v == lock_var then
+                  if v == door_info.lock then
                      return true
                   end
                end
@@ -430,25 +485,25 @@ local function makeDoorOpen(closedDoorName)
       end
 
       if can_open then
-         doorToggle(pos, node, clicker, closedDoorName, closedDoorName .. "_open")
+         door_open(door_info)
       end
    end
    return doorOpen
 end
 
-local function makeDoorClose(closedDoorName)
+local function makeDoorClose()
    local function doorClose(pos, node, clicker)
-      doorToggle(pos, node, clicker, closedDoorName, closedDoorName .. "_open")
+      local door_info = get_door_info(pos)
+      door_close(door_info)
    end
    return doorClose
 end
-
 
 minetest.register_node("spacestation:door", {
 	description = "Space Station internal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
 	--inventory_image = "spacestation_door.png",	
-	groups = {cracky=3, access=1},
+	groups = {cracky=3, id_locked=1, door=3},
 	drop = 'spacestation:door',
 	drawtype = "mesh",
 	paramtype = "light",
@@ -462,14 +517,14 @@ minetest.register_node("spacestation:door", {
 	collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_c.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = makeDoorOpen("spacestation:door"),
+   on_rightclick = makeDoorOpen(),
 })
 
 minetest.register_node("spacestation:door_open", {
 	description = "Space Station internal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
 	--inventory_image = "spacestation_door.png",	
-	groups = {cracky=3, access=1, not_in_creative_inventory=1},
+	groups = {cracky=3, id_locked=1, door=3, not_in_creative_inventory=1},
 	drop = 'spacestation:door',
 	drawtype = "mesh",
 	paramtype = "light",
@@ -483,10 +538,10 @@ minetest.register_node("spacestation:door_open", {
 	--collision_box = { type = "fixed", fixed = { -1/2,-1/2,-1/16,1/2,3/2,1/16} },
 	mesh = "door_c_open.obj",
 	sounds = default.node_sound_stone_defaults(),
-   on_rightclick = makeDoorClose("spacestation:door"),
+   on_rightclick = makeDoorClose(),
    on_timer = function(pos, elapsed)
-      local node = minetest.get_node(pos)
-      single_door_set(pos, node, "spacestation:door")      
+      local door_info = get_door_info(pos)
+      door_close(door_info, false)
       return false
    end,
 
@@ -528,6 +583,7 @@ minetest.register_craftitem("spacestation:idcard", {
    description = "ID",
    inventory_image = "spacestation_idcard.png",
    stack_max = 1,
+   groups = {id_card=1},
 })
 
 local _context = {}
@@ -576,7 +632,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
    end
 
    local node = minetest.get_node(target)
-   local access_group = minetest.get_item_group(node.name, "access")
+   local access_group = minetest.get_item_group(node.name, "id_locked")
    if not (access_group >= 1) then
       return true
    end
@@ -705,7 +761,7 @@ minetest.register_craftitem("spacestation:programmer", {
       --print(dump(pointed_thing))
       local node_name = minetest.get_node(pointed_thing.under).name
       --print(node_name)
-      local access_group = minetest.get_item_group(node_name, "access")
+      local access_group = minetest.get_item_group(node_name, "id_locked")
       if access_group >= 1 then
          local function insert_access_buttons(data, button_type, max_line_size)
             local buttons = {}
