@@ -454,7 +454,7 @@ minetest.register_node("spacestation:door_open", {
 	description = "Space Station internal Door",
 	tiles = {{ name = "spacestation_door.png", backface_culling = true }},
 	--inventory_image = "spacestation_door.png",	
-	groups = {cracky=3, access=1},
+	groups = {cracky=3, access=1, not_in_creative_inventory=1},
 	drop = 'spacestation:door',
 	drawtype = "mesh",
 	paramtype = "light",
