@@ -2,8 +2,9 @@
 local original_make_formspec = sfinv.make_formspec
 
 local spacestation_theme_inv = [[
-      list[current_player;idcard;0,5.2;1,1;]
-      list[current_player;main;2,5.2;2,1;]
+      list[current_player;backpack;0,5.2;1,1;]
+      list[current_player;idcard;1,5.2;1,1;]
+      list[current_player;main;3,5.2;2,1;]
    ]]
 
 

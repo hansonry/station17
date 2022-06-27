@@ -583,6 +583,13 @@ minetest.register_craftitem("spacestation:idcard", {
    groups = {id_card=1},
 })
 
+minetest.register_craftitem("spacestation:backpack", {
+   description = "Backpack",
+   inventory_image = "spacestation_backpack.png",
+   stack_max = 1,
+   groups = {backpack=1}
+})
+
 local _context = {}
 local function get_context(player)
    if type(player) ~= "string" then
@@ -994,7 +1001,6 @@ minetest.register_node("spacestation:computer_idcard", {
       meta:set_string("formspec", computer_idcard_build_formspec(inv))
    end,
    on_receive_fields = function(pos, formname, fields, sender)
-      
       local meta = minetest.get_meta(pos)
       local inv = meta:get_inventory()
       local target_id_stack = inv:get_stack("target_id", 1)
@@ -1092,6 +1098,7 @@ minetest.register_on_joinplayer(function(player)
    local isCreative = minetest.is_creative_enabled(player:get_player_name())
    local inv = player:get_inventory()
    inv:set_size("idcard", 1)
+   inv:set_size("backpack", 1)
    if isCreative then
       inv:set_size("main", 8 * 4)
    else
@@ -1121,6 +1128,12 @@ minetest.register_allow_player_inventory_action(function(player, action, invento
 
    if liststring == 'idcard' then
       if minetest.get_item_group(itemType, "id_card") >= 1 then
+         return 1
+      else
+         return 0
+      end
+   elseif liststring == 'backpack' then
+      if minetest.get_item_group(itemType, "backpack") >= 1 then
          return 1
       else
          return 0
