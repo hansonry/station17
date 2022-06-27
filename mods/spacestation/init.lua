@@ -400,17 +400,32 @@ local function makeDoorOpen(closedDoorName)
       if lock_var == nil  or lock_var == "" then
          can_open = true
       else
-         local wielded_stack = clicker:get_wielded_item()
-         local metadata = wielded_stack:get_meta()
-         local item_meta = id_card_metadata_table.get(metadata)
-         --print("Meta: " .. metadata)
-         if item_meta.active then
-            for _,v in ipairs(item_meta.access) do
-               if v == lock_var then
-                  can_open = true
-                  break
+         local function is_id_card_stack(stack)
+            return not stack:is_empty() and
+                   stack:get_name() == "spacestation:idcard"
+         end
+         local function id_card_can_open_door(stack)
+            if stack:is_empty() or stack:get_name() ~= "spacestation:idcard" then
+               return false
+            end
+            local metadata = stack:get_meta()
+            local idcard_meta = id_card_metadata_table.get(metadata)
+            if idcard_meta.active then
+               for _,v in ipairs(idcard_meta.access) do
+                  if v == lock_var then
+                     return true
+                  end
                end
             end
+            return false
+         end
+         local wielded_stack = clicker:get_wielded_item()
+         local clicker_inv = clicker:get_inventory()
+         local id_card_stack = clicker_inv:get_stack("idcard", 1)
+         if is_id_card_stack(wielded_stack) then
+            can_open = id_card_can_open_door(wielded_stack)
+         elseif is_id_card_stack(id_card_stack) then
+            can_open = id_card_can_open_door(id_card_stack)
          end
       end
 
