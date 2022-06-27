@@ -628,20 +628,17 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
       return true
    end
 
-   local node = minetest.get_node(target)
-   local access_group = minetest.get_item_group(node.name, "id_locked")
-   if not (access_group >= 1) then
+   local door_info = get_door_info(target)
+   if not door_info.is_id_locked then
       return true
    end
 
-   local meta = minetest.get_meta(target)
+   local meta = minetest.get_meta(door_info.pos)
 
    meta:set_string("lock", button_clicked.name)
-   
-   local otherDoorPos, _ = getOtherDoor(target, node, 
-                                  "spacestation:door", "spacestation:door_open")
-   if otherDoorPos ~= nil then
-      local otherDoorMeta = minetest.get_meta(otherDoorPos)
+
+   if door_info.is_double then
+      local otherDoorMeta = minetest.get_meta(door_info.other_door.pos)
       otherDoorMeta:set_string("lock", button_clicked.name)
    end
 
