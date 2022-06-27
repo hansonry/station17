@@ -457,12 +457,9 @@ local function makeDoorOpen()
       else
          local function is_id_card_stack(stack)
             return not stack:is_empty() and
-                   stack:get_name() == "spacestation:idcard"
+                   minetest.get_item_group(stack:get_name(), "id_card") >= 1
          end
          local function id_card_can_open_door(stack)
-            if stack:is_empty() or stack:get_name() ~= "spacestation:idcard" then
-               return false
-            end
             local metadata = stack:get_meta()
             local idcard_meta = id_card_metadata_table.get(metadata)
             if idcard_meta.active then
@@ -968,7 +965,7 @@ minetest.register_node("spacestation:computer_idcard", {
       
    end,
    allow_metadata_inventory_put = function(pos, listname, index, stack, player)
-      if stack:get_name() == "spacestation:idcard" then
+      if minetest.get_item_group(stack:get_name(), "id_card") >= 1 then
          return 1
       else
          return 0
@@ -1004,7 +1001,7 @@ minetest.register_node("spacestation:computer_idcard", {
       local meta = minetest.get_meta(pos)
       local inv = meta:get_inventory()
       local target_id_stack = inv:get_stack("target_id", 1)
-      if target_id_stack:get_name() ~= "spacestation:idcard" then
+      if minetest.get_item_group(target_id_stack:get_name(), "id_card") < 1 then
          return
       end
 
@@ -1126,7 +1123,7 @@ minetest.register_allow_player_inventory_action(function(player, action, invento
    end
 
    if liststring == 'idcard' then
-      if itemType == 'spacestation:idcard' then
+      if minetest.get_item_group(itemType, "id_card") >= 1 then
          return 1
       else
          return 0
