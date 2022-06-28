@@ -216,14 +216,34 @@ local jobs_ordered = {
 }
 local jobs = make_table_using_key(jobs_ordered, "name")
 
+local creative_inv = [[
+		image[0,5.2;1,1;gui_hb_bg.png]
+		image[1,5.2;1,1;gui_hb_bg.png]
+		image[2,5.2;1,1;gui_hb_bg.png]
+		image[3,5.2;1,1;gui_hb_bg.png]
+		image[4,5.2;1,1;gui_hb_bg.png]
+		image[5,5.2;1,1;gui_hb_bg.png]
+		image[6,5.2;1,1;gui_hb_bg.png]
+		image[7,5.2;1,1;gui_hb_bg.png]
+		list[current_player;main;0,5.2;8,1;]
+		list[current_player;main;0,6.35;8,3;8]
+	]]
 
+local spacestation_theme_inv = [[
+      list[current_player;backpack;0,5.2;1,1;]
+      list[current_player;idcard;1,5.2;1,1;]
+      list[current_player;main;3,5.2;2,1;]
+   ]]
 
 spacestation = {
    jobs_ordered   = jobs_ordered,
    jobs           = jobs,
    access_ordered = access_ordered,
    access         = access,
+   theme_inv      = spacestation_theme_inv
 }
+
+
 
 
 -- Inventory To String Conversion Functions
@@ -262,12 +282,12 @@ local function string_to_inventory(str, inv, list)
    inv:set_size(list, 0) -- clear list
    inv:set_size(list, data.size)
    for _,stack_info in ipairs(data.stacks) do
-      local stack = inv:get_stack(list, stack_info.index)
-      stack:set_name(stack_info.name)
+      local stack = ItemStack(stack_info.name)
       stack:set_count(stack_info.count)
       stack:set_wear(stack_info.wear)
       local metadata = stack:get_meta()
       metadata:from_table(stack_info.meta_table)
+      inv:set_stack(list, stack_info.index, stack)
    end
 end
 
@@ -606,14 +626,19 @@ minetest.register_node("spacestation:locker", {
 	sounds = default.node_sound_stone_defaults(),
    on_construct = function(pos)
       local meta = minetest.get_meta(pos)
-      meta:set_string("formspec",
-         "size[8,9]"..
-         "list[context;main;0,0;4,1;]"..
-         "list[current_player;main;0,5;8,4;]"..
-         "listring[]")
-      meta:set_string("infotext", "Locker")
       local inv = meta:get_inventory()
       inv:set_size("main", 4 * 1)
+      meta:set_string("infotext", "Locker")
+      
+   end,
+   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
+      local meta = minetest.get_meta(pos)
+      local isCreative = minetest.is_creative_enabled(clicker:get_player_name())
+      local player_inv = spacestation_theme_inv
+      if isCreative then
+         player_inv = creative_inv
+      end
+      meta:set_string("formspec", "size[8,9]list[context;main;0,0;8,4]" .. player_inv .. "listring[context;main]listring[current_player;main]")
    end,
    can_dig = function(pos, player)
       local meta = minetest.get_meta(pos)
@@ -1135,19 +1160,28 @@ minetest.register_node("spacestation:computer_idcard", {
 sfinv.register_page("spacestation:container", {
    title = "Containers",
    get = function(self, player, context)
+      local containers = {}
       local player_inv = player:get_inventory()
-      local backpack_stack = player_inv:get_stack("backpack", 1)
-      if backpack_stack:is_empty() then
-         return sfinv.make_formspec(player, context, "", true)
+      local function make_grid(inventory, inventory_location, list, y)
+         local inv_size = inventory:get_size(list)
+         local width = inv_size
+         local height = 1
+         if inv_size > 8 then
+            width = 8
+            height = (inv_size + 7) / 8
+         end
+         local formspec = string.format("list[%s;%s;0,%d;%d,%d]", inventory_location, list, y, width, height)
+         return formspec
       end
-      local inv_size = player_inv:get_size("backpack_contents")
-      local width = inv_size
-      local height = 1
-      if inv_size > 8 then
-         width = 8
-         height = (inv_size + 7) / 8
+      local function make_backpack()
+         local backpack_stack = player_inv:get_stack("backpack", 1)
+         if backpack_stack:is_empty() then
+            return ""
+         end
+         return make_grid(player_inv, "current_player", "backpack_contents", 0)
       end
-      local formspec = string.format("list[current_player;backpack_contents;0,0;%d,%d]", width, height)
+      table.insert(containers, make_backpack())
+      local formspec = table.concat(containers, "")
       return sfinv.make_formspec(player, context, formspec, true)
    end,
 })
@@ -1185,6 +1219,10 @@ minetest.register_allow_player_inventory_action(function(player, action, invento
       count = inventory_info.stack:get_count()
    end
 
+   if action == 'move' and inventory_info.to_list == "backpack_contents" and inventory_info.from_list == "backpack" then
+      return 0 -- Don't put the backpack into itself
+   end
+
    if liststring == 'idcard' then
       if minetest.get_item_group(itemType, "id_card") >= 1 then
          return 1
@@ -1207,64 +1245,51 @@ minetest.register_on_player_inventory_action(function(player, action, inventory,
       default_size = default_size or 8
       local container_metadata = container_stack:get_meta()
       local inv_string = container_metadata:get_string("inv")
-      print("container_open")
-      print(container_stack:get_name())
       if inv_string == "" then
-         print("Reset Inventory")
          inv_string = empty_inventory_to_string(default_size)
       end
       
-      print(inv_string)
-      print("a")
-      print(container_metadata:get_string("inv"))
-      print(container_metadata:get_string("test"))
       string_to_inventory(inv_string, 
                           inventory, inv_list)
-      print(container_metadata:get_string("inv"))
-      print("a")
    end
-   local function container_close(inventory, inv_list, container_stack)
-      print("container_close")
+   local function container_save(inventory, inv_list, container_list)
+      local container_stack = inventory:get_stack(container_list, 1)
       local container_metadata = container_stack:get_meta()
-      print(container_stack:get_name())
       local inv_string = inventory_to_string(inventory, inv_list)
-      
-      print(inv_string)
       container_metadata:set_string("inv", inv_string)
-      container_metadata:set_string("test", "test")
+      inventory:set_stack(container_list, 1, container_stack)
+   end
+   local function container_close(inventory, inv_list)
       inventory:set_size(inv_list, 0)
    end
    
    if action == 'move' then
       if inventory_info.to_list == "backpack" then
-         print("Move To:")
          local backpack_stack = inventory:get_stack(inventory_info.to_list, 
                                                     inventory_info.to_index)
-         print(backpack_stack:get_meta():get_string("inv"))
          container_open(inventory, "backpack_contents", backpack_stack)
-         print(backpack_stack:get_meta():get_string("inv"))
          sfinv.set_player_inventory_formspec(player)
       elseif inventory_info.from_list == "backpack" then
-         print("Move From:")
-         local backpack_stack = inventory:get_stack(inventory_info.to_list, 
-                                                    inventory_info.to_index)
-         print(backpack_stack:is_empty())
-         print(backpack_stack:get_meta():get_string("inv"))
-         container_close(inventory, "backpack_contents", backpack_stack)
-         print(backpack_stack:get_meta():get_string("inv"))
+         container_close(inventory, "backpack_contents")
          sfinv.set_player_inventory_formspec(player)
+      elseif inventory_info.to_list   == "backpack_contents" or
+             inventory_info.from_list == "backpack_contents" then
+         container_save(inventory, "backpack_contents", "backpack")
       end
    elseif action == 'put' then      
       if inventory_info.listname == "backpack" then
-         print("Put:")
          container_open(inventory, "backpack_contents", inventory_info.stack)
          sfinv.set_player_inventory_formspec(player)
+      elseif inventory_info.listname == "backpack_contents" then
+         container_save(inventory, "backpack_contents", "backpack")
       end
+
    elseif action == 'take' then
       if inventory_info.listname == "backpack" then
-         print("Take:")
-         container_close(inventory, "backpack_contents", inventory_info.stack)
+         container_close(inventory, "backpack_contents")
          sfinv.set_player_inventory_formspec(player)
+      elseif inventory_info.listname == "backpack_contents" then
+         container_save(inventory, "backpack_contents", "backpack")
       end
    end
 end) 
