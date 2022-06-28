@@ -791,17 +791,6 @@ minetest.register_node("spacestation:computer_idcard", {
       meta:set_string("formspec", computer_idcard_build_formspec(inv))
 
    end,
-   --[[
-   on_rightclick = function(pos, self, clicker, itemstack)
-      
-      local spec = "size[8,9]"..
-                   "list[context;target_id;0;0;1;1]"..
-                   "
-      minetest.show_formspec(clicker:get_player_name(), "spacestation:computer_idcard", spec)
-      
-      return itemstack
-   end
-   --]]
 })
 
 sfinv.register_page("spacestation:container", {
@@ -831,9 +820,9 @@ sfinv.register_page("spacestation:container", {
          end
       end
 
-      local make_lefthand  = make_container_function("main",    1, "lefthand_contents")
-      local make_righthand = make_container_function("main",    2, "righthand_contents")
-      local make_backpack = make_container_function("backpack", 1, "backpack_contents")
+      local make_lefthand  = make_container_function("main",     1, "lefthand_contents")
+      local make_righthand = make_container_function("main",     2, "righthand_contents")
+      local make_backpack  = make_container_function("backpack", 1, "backpack_contents")
       
       make_lefthand()
       make_righthand()
@@ -842,10 +831,10 @@ sfinv.register_page("spacestation:container", {
       local y = 0
       local formspec = ""
       for i,v in ipairs(containers) do
-         local width = v[2]
-         local height = v[3]
+         local width    = v[2]
+         local height   = v[3]
          local location = v[4]
-         local list = v[5]
+         local list     = v[5]
          local cmp = string.format("list[%s;%s;0,%d;%d,%d;]", location, list, y, width, height)
          formspec = formspec .. cmp
          y = y + 1
