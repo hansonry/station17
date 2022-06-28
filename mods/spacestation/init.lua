@@ -225,6 +225,52 @@ spacestation = {
    access         = access,
 }
 
+
+-- Inventory To String Conversion Functions
+local function inventory_to_string(inv, list)
+   local size = inv:get_size(list)
+   local data = {
+      size = size,
+      stacks = {}
+   }
+   for index = 1,size do
+      local stack = inv:get_stack(list, index)
+      if not stack:is_empty() then
+         local stack_info = {
+            index = index,
+            name = stack:get_name(),
+            count = stack:get_count(),
+            wear  = stack:get_wear(),
+            meta_table = stack:get_meta():to_table()
+         }
+         table.insert(data.stacks, stack_info)
+      end
+   end
+   return minetest.serialize(data)
+end
+
+local function empty_inventory_to_string(size)
+   local data = {
+      size = size,
+      stacks = {}
+   }
+   return minetest.serialize(data)
+end
+
+local function string_to_inventory(str, inv, list)
+   local data = minetest.deserialize(str)
+   inv:set_size(list, 0) -- clear list
+   inv:set_size(list, data.size)
+   for _,stack_info in ipairs(data.stacks) do
+      local stack = inv:get_stack(list, stack_info.index)
+      stack:set_name(stack_info.name)
+      stack:set_count(stack_info.count)
+      stack:set_wear(stack_info.wear)
+      local metadata = stack:get_meta()
+      metadata:from_table(stack_info.meta_table)
+   end
+end
+
 -- Metatable functions
 
 local function create_metatable_functions(metatable_key, create_new_table_function, extra_set_function)
@@ -1086,11 +1132,43 @@ minetest.register_node("spacestation:computer_idcard", {
    --]]
 })
 
-sfinv.register_page("spacestation:equipment", {
-   title = "Equipment",
+sfinv.register_page("spacestation:container", {
+   title = "Containers",
    get = function(self, player, context)
-      local formspec = "list[current_player;idcard;0,0;1,1]"
+      local player_inv = player:get_inventory()
+      local backpack_stack = player_inv:get_stack("backpack", 1)
+      if backpack_stack:is_empty() then
+         return sfinv.make_formspec(player, context, "", true)
+      end
+      local backpack_meta = backpack_stack:get_meta()
+      local inv_string = backpack_meta:get_string("inv")
+      if inv_string == "" then
+         inv_string = empty_inventory_to_string(8)
+      end
+      print("get")
+      print(inv_string)
+      string_to_inventory(inv_string, 
+                          player_inv, "backpack_contents")
+      local inv_size = player_inv:get_size("backpack_contents")
+      local width = inv_size
+      local height = 1
+      if inv_size > 8 then
+         width = 8
+         height = (inv_size + 7) / 8
+      end
+      local formspec = string.format("list[current_player;backpack_contents;0,0;%d,%d]", width, height)
       return sfinv.make_formspec(player, context, formspec, true)
+   end,
+   on_player_receive_fields = function(self, player, context, fields)
+      local player_inv = player:get_inventory()
+      local backpack_stack = player_inv:get_stack("backpack", 1)
+      local backpack_meta = backpack_stack:get_meta()      
+      local inv_string = inventory_to_string(player_inv, "backpack_contents")
+      print("On Receive")
+      print(inv_string)
+      backpack_meta:set_string("inv", inv_string)
+      player_inv:set_size("backpack_contents", 0)
+      
    end
 })
 
@@ -1099,6 +1177,7 @@ minetest.register_on_joinplayer(function(player)
    local inv = player:get_inventory()
    inv:set_size("idcard", 1)
    inv:set_size("backpack", 1)
+   inv:set_size("backpack_contents", 0)
    if isCreative then
       inv:set_size("main", 8 * 4)
    else
