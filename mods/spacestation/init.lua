@@ -824,7 +824,8 @@ sfinv.register_page("spacestation:container", {
       local function make_container_function(list, index, list_inv)
          return function()
             local stack = player_inv:get_stack(list, index)
-            if not stack:is_empty() then
+            local is_storage = minetest.get_item_group(stack:get_name(), "storage_size") >= 1
+            if not stack:is_empty() and is_storage then
                make_grid(player_inv, "current_player", list_inv)
             end
          end
