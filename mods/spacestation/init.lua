@@ -1140,15 +1140,6 @@ sfinv.register_page("spacestation:container", {
       if backpack_stack:is_empty() then
          return sfinv.make_formspec(player, context, "", true)
       end
-      local backpack_meta = backpack_stack:get_meta()
-      local inv_string = backpack_meta:get_string("inv")
-      if inv_string == "" then
-         inv_string = empty_inventory_to_string(8)
-      end
-      print("get")
-      print(inv_string)
-      string_to_inventory(inv_string, 
-                          player_inv, "backpack_contents")
       local inv_size = player_inv:get_size("backpack_contents")
       local width = inv_size
       local height = 1
@@ -1159,17 +1150,6 @@ sfinv.register_page("spacestation:container", {
       local formspec = string.format("list[current_player;backpack_contents;0,0;%d,%d]", width, height)
       return sfinv.make_formspec(player, context, formspec, true)
    end,
-   on_player_receive_fields = function(self, player, context, fields)
-      local player_inv = player:get_inventory()
-      local backpack_stack = player_inv:get_stack("backpack", 1)
-      local backpack_meta = backpack_stack:get_meta()      
-      local inv_string = inventory_to_string(player_inv, "backpack_contents")
-      print("On Receive")
-      print(inv_string)
-      backpack_meta:set_string("inv", inv_string)
-      player_inv:set_size("backpack_contents", 0)
-      
-   end
 })
 
 minetest.register_on_joinplayer(function(player)
@@ -1221,6 +1201,73 @@ minetest.register_allow_player_inventory_action(function(player, action, invento
    return count 
 
 end)
+
+minetest.register_on_player_inventory_action(function(player, action, inventory, inventory_info)
+   local function container_open(inventory, inv_list, container_stack, default_size)
+      default_size = default_size or 8
+      local container_metadata = container_stack:get_meta()
+      local inv_string = container_metadata:get_string("inv")
+      print("container_open")
+      print(container_stack:get_name())
+      if inv_string == "" then
+         print("Reset Inventory")
+         inv_string = empty_inventory_to_string(default_size)
+      end
+      
+      print(inv_string)
+      print("a")
+      print(container_metadata:get_string("inv"))
+      print(container_metadata:get_string("test"))
+      string_to_inventory(inv_string, 
+                          inventory, inv_list)
+      print(container_metadata:get_string("inv"))
+      print("a")
+   end
+   local function container_close(inventory, inv_list, container_stack)
+      print("container_close")
+      local container_metadata = container_stack:get_meta()
+      print(container_stack:get_name())
+      local inv_string = inventory_to_string(inventory, inv_list)
+      
+      print(inv_string)
+      container_metadata:set_string("inv", inv_string)
+      container_metadata:set_string("test", "test")
+      inventory:set_size(inv_list, 0)
+   end
+   
+   if action == 'move' then
+      if inventory_info.to_list == "backpack" then
+         print("Move To:")
+         local backpack_stack = inventory:get_stack(inventory_info.to_list, 
+                                                    inventory_info.to_index)
+         print(backpack_stack:get_meta():get_string("inv"))
+         container_open(inventory, "backpack_contents", backpack_stack)
+         print(backpack_stack:get_meta():get_string("inv"))
+         sfinv.set_player_inventory_formspec(player)
+      elseif inventory_info.from_list == "backpack" then
+         print("Move From:")
+         local backpack_stack = inventory:get_stack(inventory_info.to_list, 
+                                                    inventory_info.to_index)
+         print(backpack_stack:is_empty())
+         print(backpack_stack:get_meta():get_string("inv"))
+         container_close(inventory, "backpack_contents", backpack_stack)
+         print(backpack_stack:get_meta():get_string("inv"))
+         sfinv.set_player_inventory_formspec(player)
+      end
+   elseif action == 'put' then      
+      if inventory_info.listname == "backpack" then
+         print("Put:")
+         container_open(inventory, "backpack_contents", inventory_info.stack)
+         sfinv.set_player_inventory_formspec(player)
+      end
+   elseif action == 'take' then
+      if inventory_info.listname == "backpack" then
+         print("Take:")
+         container_close(inventory, "backpack_contents", inventory_info.stack)
+         sfinv.set_player_inventory_formspec(player)
+      end
+   end
+end) 
 
 local function create_id_card_stack(name, jobTitle, accessList)
    local stack = ItemStack("spacestation:idcard")
