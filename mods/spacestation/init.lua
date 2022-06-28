@@ -1,220 +1,8 @@
 -- spacestation (Minetest 0.4 mod)
--- Space Station parts
 
-local function make_table_using_key(array, keyName)
-   local t={}
-   local function toKeyText(text)
-      return string.gsub(text, " ", "_"):lower()
-   end
-   for i,v in ipairs(array) do
-      local key = toKeyText(v[keyName])
-      t[key] = v
-   end
-   return t
-end
+spacestation = {}
 
-local access_ordered = {
-   { name = "Command" },
-   { name = "Captain Office" },
-   { name = "Head Of Personnel Office" },
-   { name = "Security" },
-   { name = "Head Of Security Office" },
-   { name = "Cargo" },
-   { name = "Mining" },
-   { name = "Quarter Master Office" },
-   { name = "Engineering" },
-   { name = "Chief Engineer Office" },
-   { name = "Kitchen" },
-   { name = "Botany" },
-   { name = "Science" },
-   { name = "Research Director Office" },
-   { name = "Medical" },
-   { name = "Chief Medical Officer Office" },
-   { name = "Clown Office" },
-   { name = "Maintenance" },
-   { name = "Crew" },
-}
-
-local access = make_table_using_key(access_ordered, "name")
-
-
-
-local jobs_ordered = {
-   { 
-      name = "Captain",
-      permissions = { 
-         access.command, 
-         access.captain_office,
-         access.head_of_personnel_office,
-         access.security,
-         access.head_of_security_office,
-         access.cargo,
-         access.mining,
-         access.quarter_master_office,
-         access.engineering,
-         access.chief_engineer_office,
-         access.kitchen,
-         access.botany,
-         access.science,
-         access.research_director_office,
-         access.medical,
-         access.chief_medical_officer_office,
-         access.clown_office,
-         access.maintenance,
-         access.crew
-      } 
-   },
-   { 
-      name = "Head Of Personnel",
-      permissions = { 
-         access.command, 
-         access.head_of_personnel_office,
-         access.security,
-         access.kitchen,
-         access.botany,
-         access.cargo,
-         access.mining,
-         access.maintenance,
-         access.crew
-      } 
-   },
-   { 
-      name = "Botanist",
-      permissions = { 
-         access.botany,
-         access.crew
-      } 
-   },   
-   { 
-      name = "Chef", 
-      permissions = { 
-         access.kitchen,
-         access.crew
-      } 
-   },
-   { 
-      name = "Bartender",
-      permissions = {
-         access.crew
-      } 
-   },
-   { 
-      name = "Janitor",
-      permissions = {
-         access.crew
-      } 
-   },
-   { 
-      name = "Quarter Master",
-      permissions = {
-         access.cargo,
-         access.mining,
-         access.quarter_master_office,
-         access.crew
-      }
-   },
-   { 
-      name = "Miner",
-      permissions = {
-         access.cargo,
-         access.mining,
-         access.crew
-      }
-   },
-   { 
-      name = "Cargo Technician",
-      permissions = {
-         access.cargo,
-         access.crew
-      }
-   },
-   { 
-      name = "Head Of Security",
-      permissions = { 
-         access.command, 
-         access.security,
-         access.head_of_security_office,
-         access.maintenance,
-         access.crew
-      } 
-   },
-   { 
-      name = "Security Officer",
-      permissions = { 
-         access.security,
-         access.maintenance,
-         access.crew
-      }       
-   },
-   { 
-      name = "Chief Medical Officer",
-      permissions = { 
-         access.command, 
-         access.medical,
-         access.chief_medical_officer_office,
-         access.crew
-      }
-   },
-   { 
-      name = "Doctor",
-      permissions = { 
-         access.command, 
-         access.medical,
-         access.crew
-      }
-   },
-   { 
-      name = "Chief Engineer",
-      permissions = { 
-         access.command, 
-         access.engineering,
-         access.chief_engineer_office,
-         access.maintenance,
-         access.crew
-      } 
-   },
-   { 
-      name = "Engineer",
-      permissions = { 
-         access.engineering,
-         access.maintenance,
-         access.crew
-      } 
-   },
-   { 
-      name = "Research Director",
-      permissions = { 
-         access.command, 
-         access.science,
-         access.research_director_office,
-         access.crew
-      } 
-   },
-   { 
-      name = "Scientist",
-      permissions = { 
-         access.science,
-         access.research_director_office,
-         access.crew
-      }       
-   },
-   {
-      name = "Clown",
-      permissions = { 
-         --access.command, 
-         --access.captain_office, -- :D
-         access.clown_office,
-         access.crew
-      }
-   },
-   {
-      name = "Assistant",
-      permissions = { 
-         access.crew
-      }
-   }
-}
-local jobs = make_table_using_key(jobs_ordered, "name")
+local spacestation_path = minetest.get_modpath("spacestation")
 
 local creative_inv = [[
 		image[0,5.2;1,1;gui_hb_bg.png]
@@ -235,61 +23,18 @@ local spacestation_theme_inv = [[
       list[current_player;main;3,5.2;2,1;]
    ]]
 
-spacestation = {
-   jobs_ordered   = jobs_ordered,
-   jobs           = jobs,
-   access_ordered = access_ordered,
-   access         = access,
-   theme_inv      = spacestation_theme_inv
-}
 
 
 
+spacestation.theme_inv = spacestation_theme_inv
 
--- Inventory To String Conversion Functions
-local function inventory_to_string(inv, list)
-   local size = inv:get_size(list)
-   local data = {
-      size = size,
-      stacks = {}
-   }
-   for index = 1,size do
-      local stack = inv:get_stack(list, index)
-      if not stack:is_empty() then
-         local stack_info = {
-            index = index,
-            name = stack:get_name(),
-            count = stack:get_count(),
-            wear  = stack:get_wear(),
-            meta_table = stack:get_meta():to_table()
-         }
-         table.insert(data.stacks, stack_info)
-      end
-   end
-   return minetest.serialize(data)
-end
 
-local function empty_inventory_to_string(size)
-   local data = {
-      size = size,
-      stacks = {}
-   }
-   return minetest.serialize(data)
-end
 
-local function string_to_inventory(str, inv, list)
-   local data = minetest.deserialize(str)
-   inv:set_size(list, 0) -- clear list
-   inv:set_size(list, data.size)
-   for _,stack_info in ipairs(data.stacks) do
-      local stack = ItemStack(stack_info.name)
-      stack:set_count(stack_info.count)
-      stack:set_wear(stack_info.wear)
-      local metadata = stack:get_meta()
-      metadata:from_table(stack_info.meta_table)
-      inv:set_stack(list, stack_info.index, stack)
-   end
-end
+dofile(spacestation_path .. "/mapgen.lua")
+dofile(spacestation_path .. "/skybox.lua")
+dofile(spacestation_path .. "/inventory.lua")
+local inv_serializer   = dofile(spacestation_path .. "/inventory_serializer.lua")
+local formspec_builder = dofile(spacestation_path .. "/formspec_builder.lua")
 
 -- Metatable functions
 
@@ -658,7 +403,7 @@ minetest.register_craftitem("spacestation:backpack", {
    description = "Backpack",
    inventory_image = "spacestation_backpack.png",
    stack_max = 1,
-   groups = {backpack=1}
+   groups = {backpack=1,storage_size=8}
 })
 
 local _context = {}
@@ -722,104 +467,6 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 
    return true
 end)
-
-local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padding)
-   hori_spacing = hori_spacing or 0.1
-   virt_spacing = virt_spacing or 0.1
-   page_padding = page_padding or 0.5
-   local invGridScale = 1.2
-   local next_x = page_padding
-   local next_y = page_padding
-   local max_x = next_x
-   local formStr = ""
-   local f = string.format
-   for row_i, row_v in ipairs(compTable) do
-      next_x = page_padding
-      local row_height = 0
-      if type(row_v) == "string" and row_v == "player_inventory" then
-         formStr = formStr .. 
-                   f("list[current_player;main;%.3f,%.3f;8,4;]", 
-                     next_x, next_y) ..
-                   "listring[]"
-         row_height = 4 * invGridScale
-         next_x = next_x + 8 * invGridScale 
-      elseif type(row_v) == "number" then
-         row_height = row_v
-      else
-         for cell_i, cell_v in ipairs(row_v) do
-            local cell_height = 0
-            local cellType = cell_v[1]
-            if cellType == "label" then
-               local width = cell_v[2]
-               local text  = cell_v[3]
-               formStr = formStr ..
-                         f("label[%.3f,%.3f;%s]", 
-                           next_x, next_y + 0.5, text)
-               next_x = next_x + width
-               cell_height = 1
-            elseif cellType == "list" then
-               local width    = cell_v[2]
-               local height   = cell_v[3]
-               local location = cell_v[4]
-               local name     = cell_v[5]
-               formStr = formStr ..
-                         f("list[%s;%s;%.3f,%.3f;%d,%d;]",
-                           location, name, next_x, next_y, width, height)
-               next_x = next_x + width * invGridScale
-               cell_height = height * invGridScale
-            elseif cellType == "field" then
-               local width = cell_v[2]
-               local name  = cell_v[3]
-               local text  = cell_v[4]
-               local closeOnEnter = cell_v[5] == nil and true or cell_v[5]
-               
-               formStr = formStr ..
-                         f("field[%.3f,%.3f;%.3f,%.3f;%s;;%s]",
-                           next_x, next_y + 0.25, width, 0.5, name, text)
-               -- Default value for close on enter is true, 
-               -- so only create an entery when false
-               if not closeOnEnter then
-                  formStr = formStr ..
-                            f("field_close_on_enter[%s;false]", name)
-               end
-               next_x = next_x + width
-               cell_height = 0.75
-            elseif cellType == "button" or cellType == "button_exit" then
-               local width = cell_v[2]
-               local name  = cell_v[3]
-               local text  = cell_v[4]
-               formStr = formStr ..
-                         f("%s[%.3f,%.3f;%.3f,%.3f;%s;%s]", 
-                           cellType, next_x, next_y, width, 0.75, name, text) 
-               next_x = next_x + width
-               cell_height = 0.75
-            elseif cellType == "checkbox" then
-               local width = cell_v[2]
-               local name  = cell_v[3]
-               local text  = cell_v[4]
-               local value = cell_v[5] or false
-               local valueStr = value and "true" or "false"
-               formStr = formStr ..
-                         f("checkbox[%.3f,%.3f;%s;%s;%s]", 
-                           next_x, next_y + 0.5, name, text, valueStr) 
-               next_x = next_x + width
-               cell_height = 0.75
-            else
-               assert(true, f("Unknown cell type: %s", cellType))
-            end
-            next_x = next_x + virt_spacing
-            if cell_height > row_height then row_height = cell_height end
-         end
-      end
-      next_y = next_y + row_height + hori_spacing
-      if next_x > max_x then max_x = next_x end
-   end
-   
-   return "formspec_version[5]" ..
-          f("size[%.3f,%.3f]", max_x + page_padding, next_y + page_padding) ..
-          formStr
-end
-
 
 
 minetest.register_craftitem("spacestation:programmer", {
@@ -1162,7 +809,7 @@ sfinv.register_page("spacestation:container", {
    get = function(self, player, context)
       local containers = {}
       local player_inv = player:get_inventory()
-      local function make_grid(inventory, inventory_location, list, y)
+      local function make_grid(inventory, inventory_location, list)
          local inv_size = inventory:get_size(list)
          local width = inv_size
          local height = 1
@@ -1170,18 +817,38 @@ sfinv.register_page("spacestation:container", {
             width = 8
             height = (inv_size + 7) / 8
          end
-         local formspec = string.format("list[%s;%s;0,%d;%d,%d]", inventory_location, list, y, width, height)
-         return formspec
+         table.insert(containers, { 
+            "list", width, height, inventory_location, list 
+         })
       end
-      local function make_backpack()
-         local backpack_stack = player_inv:get_stack("backpack", 1)
-         if backpack_stack:is_empty() then
-            return ""
+      local function make_container_function(list, index, list_inv)
+         return function()
+            local stack = player_inv:get_stack(list, index)
+            if not stack:is_empty() then
+               make_grid(player_inv, "current_player", list_inv)
+            end
          end
-         return make_grid(player_inv, "current_player", "backpack_contents", 0)
       end
-      table.insert(containers, make_backpack())
-      local formspec = table.concat(containers, "")
+
+      local make_lefthand  = make_container_function("main",    1, "lefthand_contents")
+      local make_righthand = make_container_function("main",    2, "righthand_contents")
+      local make_backpack = make_container_function("backpack", 1, "backpack_contents")
+      
+      make_lefthand()
+      make_righthand()
+      make_backpack()
+      
+      local y = 0
+      local formspec = ""
+      for i,v in ipairs(containers) do
+         local width = v[2]
+         local height = v[3]
+         local location = v[4]
+         local list = v[5]
+         local cmp = string.format("list[%s;%s;0,%d;%d,%d;]", location, list, y, width, height)
+         formspec = formspec .. cmp
+         y = y + 1
+      end
       return sfinv.make_formspec(player, context, formspec, true)
    end,
 })
@@ -1191,7 +858,6 @@ minetest.register_on_joinplayer(function(player)
    local inv = player:get_inventory()
    inv:set_size("idcard", 1)
    inv:set_size("backpack", 1)
-   inv:set_size("backpack_contents", 0)
    if isCreative then
       inv:set_size("main", 8 * 4)
    else
@@ -1201,26 +867,14 @@ end)
 
 minetest.register_allow_player_inventory_action(function(player, action, inventory, inventory_info)
    local liststring = nil
-   local count = 0
    local itemType = nil
    if action == 'move' then
       local stack = inventory:get_stack(inventory_info.from_list, inventory_info.from_index)
       liststring = inventory_info.to_list
-      count = inventory_info.count
-      if count == nil then
-         count = stack:get_count() 
-      end
       itemType = stack:get_name()
    elseif action == 'put' then
       liststring = inventory_info.liststring
-      count = inventory_info.stack:get_count()
       itemType = inventory_info.stack:get_name()
-   elseif action == 'take' then
-      count = inventory_info.stack:get_count()
-   end
-
-   if action == 'move' and inventory_info.to_list == "backpack_contents" and inventory_info.from_list == "backpack" then
-      return 0 -- Don't put the backpack into itself
    end
 
    if liststring == 'idcard' then
@@ -1236,63 +890,108 @@ minetest.register_allow_player_inventory_action(function(player, action, invento
          return 0
       end
    end
-   return count 
+   return nil 
 
 end)
 
-minetest.register_on_player_inventory_action(function(player, action, inventory, inventory_info)
-   local function container_open(inventory, inv_list, container_stack, default_size)
-      default_size = default_size or 8
+-- list -> name of storage inventory
+-- source_list -> inventory name of slot
+-- source_index -> inventory index of slot
+local function create_storage_inventory(list, source_list, source_index)
+   local function container_open(inventory, container_stack)
+      --print(string.format("Open: %s", list))
+      local default_size = minetest.get_item_group(container_stack:get_name(), 
+                                                   "storage_size")
       local container_metadata = container_stack:get_meta()
       local inv_string = container_metadata:get_string("inv")
-      if inv_string == "" then
-         inv_string = empty_inventory_to_string(default_size)
+      inv_serializer.deserialize(inv_string, inventory, list, default_size)
+   end
+   local function container_save(inventory)
+      --print(string.format("Save: %s", list))
+      local container_stack = inventory:get_stack(source_list, source_index)
+      local is_storage = minetest.get_item_group(container_stack:get_name(), "storage_size") >= 1
+      if is_storage then
+         local container_metadata = container_stack:get_meta()
+         local inv_string = inv_serializer.serialize(inventory, list)
+         container_metadata:set_string("inv", inv_string)
+         inventory:set_stack(source_list, source_index, container_stack)
       end
-      
-      string_to_inventory(inv_string, 
-                          inventory, inv_list)
    end
-   local function container_save(inventory, inv_list, container_list)
-      local container_stack = inventory:get_stack(container_list, 1)
-      local container_metadata = container_stack:get_meta()
-      local inv_string = inventory_to_string(inventory, inv_list)
-      container_metadata:set_string("inv", inv_string)
-      inventory:set_stack(container_list, 1, container_stack)
-   end
-   local function container_close(inventory, inv_list)
-      inventory:set_size(inv_list, 0)
+   local function container_close(inventory)
+      --print(string.format("Close: %s", list))
+      inventory:set_size(list, 0)
    end
    
-   if action == 'move' then
-      if inventory_info.to_list == "backpack" then
-         local backpack_stack = inventory:get_stack(inventory_info.to_list, 
-                                                    inventory_info.to_index)
-         container_open(inventory, "backpack_contents", backpack_stack)
-         sfinv.set_player_inventory_formspec(player)
-      elseif inventory_info.from_list == "backpack" then
-         container_close(inventory, "backpack_contents")
-         sfinv.set_player_inventory_formspec(player)
-      elseif inventory_info.to_list   == "backpack_contents" or
-             inventory_info.from_list == "backpack_contents" then
-         container_save(inventory, "backpack_contents", "backpack")
+   minetest.register_allow_player_inventory_action(function(player, action, inventory, inventory_info)
+      if action == 'move' then
+         if inventory_info.to_list == list and
+            inventory_info.from_list == source_list and  
+            inventory_info.from_index == source_index then
+            return 0 -- Don't put the container into its self
+         end
       end
-   elseif action == 'put' then      
-      if inventory_info.listname == "backpack" then
-         container_open(inventory, "backpack_contents", inventory_info.stack)
+      return nil
+   end)
+
+   minetest.register_on_player_inventory_action(function(player, action, inventory, inventory_info)
+      local redraw = false
+      if action == 'move' then
+         local stack = inventory:get_stack(inventory_info.to_list, 
+                                           inventory_info.to_index)
+         local is_storage = minetest.get_item_group(stack:get_name(), "storage_size") >= 1
+         
+         if inventory_info.from_list  == source_list and 
+            inventory_info.from_index == source_index and
+            is_storage then
+            container_close(inventory)
+            redraw = true
+         end
+         if inventory_info.to_list  == source_list and 
+            inventory_info.to_index == source_index and
+            is_storage then
+            container_open(inventory, stack)
+            redraw = true
+         end
+         if inventory_info.to_list   == list or
+            inventory_info.from_list == list then
+            container_save(inventory)
+         end
+         
+         
+      elseif action == 'put' then
+         local stack = inventory_info.stack
+         local is_storage = minetest.get_item_group(stack:get_name(), "storage_size") >= 1
+         if inventory_info.listname == source_list and
+            inventory_info.index    == source_index and
+            is_storage then
+            container_open(inventory, stack)
+            redraw = true
+         elseif inventory_info.listname == list then
+            container_save(inventory)
+         end
+      elseif action == 'take' then
+         local stack = inventory_info.stack
+         local is_storage = minetest.get_item_group(stack:get_name(), "storage_size") >= 1
+         if inventory_info.listname == source_list and 
+            inventory_info.index    == source_index and
+            is_storage then
+            container_close(inventory)
+            redraw = true
+         elseif inventory_info.listname == list then
+            container_save(inventory)
+         end
+      end
+      
+      if redraw then
          sfinv.set_player_inventory_formspec(player)
-      elseif inventory_info.listname == "backpack_contents" then
-         container_save(inventory, "backpack_contents", "backpack")
       end
 
-   elseif action == 'take' then
-      if inventory_info.listname == "backpack" then
-         container_close(inventory, "backpack_contents")
-         sfinv.set_player_inventory_formspec(player)
-      elseif inventory_info.listname == "backpack_contents" then
-         container_save(inventory, "backpack_contents", "backpack")
-      end
-   end
-end) 
+   end)
+end
+
+create_storage_inventory("backpack_contents",  "backpack", 1)
+create_storage_inventory("lefthand_contents",  "main", 1)
+create_storage_inventory("righthand_contents", "main", 2)
 
 local function create_id_card_stack(name, jobTitle, accessList)
    local stack = ItemStack("spacestation:idcard")
@@ -1315,9 +1014,4 @@ minetest.register_on_newplayer(function(ObjectRef)
    playerInventory:set_stack(playerInventoryName, 1, idCardStack)
 end)
 
-local spacestation_path = minetest.get_modpath("spacestation")
-
-dofile(spacestation_path .. "/mapgen.lua")
-dofile(spacestation_path .. "/skybox.lua")
-dofile(spacestation_path .. "/inventory.lua")
 
