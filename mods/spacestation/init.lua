@@ -1022,8 +1022,8 @@ minetest.register_entity("spacestation:locker3d_body", {
       physical = true,
       pointable = true,
       collide_with_objects = true,
-      collisionbox = from_pixels({-8, -8, -8, 8, 24, 8}),
-      selectionbox = from_pixels({-7, -8, -8, 8, 24, 8}),
+      collisionbox = from_pixels({-8, -8, -8, 8, 23.5, 8}),
+      selectionbox = from_pixels({-7, -8, -8, 8, 24,   8}),
       visual_size = {x = 10, y = 10, z = 10}, -- TODO: size locker correctly
    },
    
@@ -1031,12 +1031,42 @@ minetest.register_entity("spacestation:locker3d_body", {
    _is_broken = false,
    _is_locked = false,
    _lock = "",
+   _dragged_by = "",
+   _dragged_offset = vector.new(0, 0, 0),
 
    on_death = function(self, killer)
       print("locker kill")
    end,
    on_rightclick = function(self, clicker)
       print("body Right click")
+      if self._dragged_by == "" then
+         print("Now Dragging")
+         self._dragged_offset = vector.subtract(self.object:get_pos(), clicker:get_pos())
+         self._dragged_by = clicker:get_player_name()
+      elseif self._dragged_by == clicker:get_player_name() then
+         print("Now Let go")
+         self._dragged_by = ""
+         self._dragged_offset = vector.new(0, 0, 0)
+         self.object:set_velocity(vector.new(0, 0, 0))
+      end
+   end,
+   on_step = function(self, dtime, moveresult)
+      if self._dragged_by ~= "" then
+         local player = minetest.get_player_by_name(self._dragged_by)
+         local player_max_speed = player:get_physics_override().speed
+         
+         local max_speed = player_max_speed * 10
+         
+         
+         local target = vector.add(player:get_pos(), self._dragged_offset)
+         local difference = vector.subtract(target, self.object:get_pos())
+         local distance = vector.length(difference)
+         local speed = distance * 1/2 * max_speed
+         if speed > max_speed then speed = max_speed end
+         local normal = vector.normalize(difference)
+         local velocity = vector.multiply(normal, speed)
+         self.object:set_velocity(velocity)
+      end
    end,
    on_detach_child = function(self, child)
       print("Child detached from door body. Assuming broken")
@@ -1044,20 +1074,21 @@ minetest.register_entity("spacestation:locker3d_body", {
    end,
    get_staticdata = function(self)
       return minetest.write_json({
-         is_open = self._is_open,
+         is_open   = self._is_open,
          is_broken = self._is_broken,
-         lock = self._lock,
+         lock      = self._lock,
          is_locked = self._is_locked
       })
    end,
    on_activate = function(self, staticdata, dtime_s)
       if staticdata ~= "" and staticdata ~= nil then
          local data = minetest.parse_json(staticdata) or {}
-         self._is_open = data.is_open
+         self._is_open   = data.is_open
          self._is_broken = data.is_broken
-         self._lock = data.lock
+         self._lock      = data.lock
          self._is_locked = data.is_locked
       end
+      self.object:set_velocity(vector.new(0, 0, 0))
       local children = self.object:get_children()
       if self._is_broken then
          for i,v in ipairs(children) do
@@ -1101,8 +1132,6 @@ minetest.register_entity("spacestation:locker3d_door", {
 
 local function make_locker3d(pos)
    local body_object = minetest.add_entity(pos, "spacestation:locker3d_body", nil)
-   --local door_object = minetest.add_entity(pos, "spacestation:locker3d_door", nil)
-   --door_object:set_attach(body_object, "", {x = 0, y = 0, z = 0}, nil, true)
    
    return body_object
 end
