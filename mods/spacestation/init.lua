@@ -1014,6 +1014,8 @@ local function from_pixels(points, unit_size)
    return newTable
 end
 
+local tau = math.pi * 2
+
 minetest.register_entity("spacestation:locker3d_body", {
    initial_properties  = {
       visual = "mesh",
@@ -1032,7 +1034,7 @@ minetest.register_entity("spacestation:locker3d_body", {
    _is_locked = false,
    _lock = "",
    _dragged_by = "",
-   _dragged_offset = vector.new(0, 0, 0),
+   _dragged_distance = 0,
 
    on_death = function(self, killer)
       print("locker kill")
@@ -1041,12 +1043,12 @@ minetest.register_entity("spacestation:locker3d_body", {
       print("body Right click")
       if self._dragged_by == "" then
          print("Now Dragging")
-         self._dragged_offset = vector.subtract(self.object:get_pos(), clicker:get_pos())
+         local offset = vector.subtract(self.object:get_pos(), clicker:get_pos())
+         self._dragged_distance = vector.length(offset)
          self._dragged_by = clicker:get_player_name()
       elseif self._dragged_by == clicker:get_player_name() then
          print("Now Let go")
          self._dragged_by = ""
-         self._dragged_offset = vector.new(0, 0, 0)
          self.object:set_velocity(vector.new(0, 0, 0))
       end
    end,
@@ -1055,10 +1057,14 @@ minetest.register_entity("spacestation:locker3d_body", {
          local player = minetest.get_player_by_name(self._dragged_by)
          local player_max_speed = player:get_physics_override().speed
          
+         -- Update position
          local max_speed = player_max_speed * 10
          
+         local player_look = player:get_look_dir()
+         local player_dir = vector.normalize(vector.new(player_look.x, 0, player_look.z))
+         local offset = vector.multiply(player_dir, self._dragged_distance)
+         local target = vector.add(player:get_pos(), offset)
          
-         local target = vector.add(player:get_pos(), self._dragged_offset)
          local difference = vector.subtract(target, self.object:get_pos())
          local distance = vector.length(difference)
          local speed = distance * 1/2 * max_speed
@@ -1066,6 +1072,31 @@ minetest.register_entity("spacestation:locker3d_body", {
          local normal = vector.normalize(difference)
          local velocity = vector.multiply(normal, speed)
          self.object:set_velocity(velocity)
+         
+         -- Update rotation
+         local function rad_diff(a, b)
+            
+            local _, a_part = math.modf(a / tau)
+            local _, b_part = math.modf(b / tau)
+
+            local diff = a_part - b_part
+            if diff > 0.5 then 
+               diff = diff - 1
+            elseif diff < -0.5 then
+               diff = diff + 1
+            end
+            
+            --print("Parts", a_part, b_part, diff)
+            return diff * tau
+         end
+         local player_yaw = player:get_look_horizontal() + math.pi / 2
+         local yaw = self.object:get_yaw()
+         local diff = rad_diff(player_yaw, yaw)
+         local abs_diff = math.abs(diff)
+         if abs_diff > 0.0001 then
+            yaw = yaw + diff * dtime * 2
+            self.object:set_yaw(yaw)
+         end
       end
    end,
    on_detach_child = function(self, child)
