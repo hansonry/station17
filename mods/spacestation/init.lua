@@ -1005,4 +1005,34 @@ minetest.register_on_newplayer(function(ObjectRef)
    playerInventory:set_stack(playerInventoryName, 1, idCardStack)
 end)
 
+minetest.register_entity("spacestation:locker3d_base", {
+   initial_properties  = {
+      visual = "mesh",
+      mesh = "spacestation_locker_body.obj",
+      textures = {"spacestation_locker.png"},
+      physical = true,
+      collide_with_objects = true,
+      collisionbox = { -0.5, -0.5, -0.5, 0.5, 1.5, 0.5},
+      visual_size = {x = 10, y = 10, z = 10}, -- Why is this nessary
+   }
+})
+
+
+minetest.register_craftitem("spacestation:locker3d_spawner", {
+   description = "Locker Spawner",
+   inventory_image = "spacestation_locker_icon.png",
+   on_place = function(itemstack, placer, pointed_thing)      
+      if pointed_thing.type == "node" then
+         local pos = pointed_thing.above
+         
+         local obj = minetest.add_entity(pos, "spacestation:locker3d_base", nil)
+         
+         itemstack:set_count(itemstack:get_count() - 1)
+         return itemstack
+      end
+      return nil
+   end,
+})
+
+
 
