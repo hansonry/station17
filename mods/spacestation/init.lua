@@ -1020,6 +1020,17 @@ local function round(value)
    return math.floor(value + 0.5)
 end
 
+local function sign(value)
+   local value_abs = math.abs(value)
+   if value_abs < 0.0001 then
+      return 0
+   end
+   if value > 0 then
+      return 1
+   end
+   return -1
+end
+
 local function rad_diff(a, b)
    
    local _, a_part = math.modf(a / tau)
@@ -1062,10 +1073,13 @@ minetest.register_entity("spacestation:locker3d_body", {
    on_rightclick = function(self, clicker)
       print("body Right click")
       if self._dragged_by == "" then
-         print("Now Dragging")
          local offset = vector.subtract(self.object:get_pos(), clicker:get_pos())
-         self._dragged_distance = vector.length(offset)
-         self._dragged_by = clicker:get_player_name()
+         local dist = vector.length(offset)
+         if dist < 3 then
+            print("Now Dragging")
+            self._dragged_distance = dist
+            self._dragged_by = clicker:get_player_name()
+         end
       elseif self._dragged_by == clicker:get_player_name() then
          print("Now Let go")
          self._dragged_by = ""
@@ -1131,14 +1145,21 @@ minetest.register_entity("spacestation:locker3d_body", {
          
          -- Update rotation
 
+         local max_rot_speed = 0.79
          local player_yaw = player:get_look_horizontal() + math.pi / 2
          local yaw = self.object:get_yaw()
          local diff = rad_diff(player_yaw, yaw)
-         local abs_diff = math.abs(diff)
-         if abs_diff > 0.0001 then
-            yaw = yaw + diff * dtime * 2
-            self.object:set_yaw(yaw)
+         local diff_sign = sign(diff)
+         local diff_abs = diff_sign * diff
+         local rot_delta = max_rot_speed * dtime
+         if rot_delta > diff_abs then rot_delta = diff_abs end
+
+         if diff_abs == 0 then
+            yaw = player_yaw
+         else
+            yaw = yaw + rot_delta * diff_sign
          end
+         self.object:set_yaw(yaw)
       end
    end,
    on_detach_child = function(self, child)
