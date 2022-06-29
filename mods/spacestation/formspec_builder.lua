@@ -1,4 +1,4 @@
-local function full(compTable, hori_spacing, virt_spacing, page_padding)
+local function formspec_builder(compTable, hori_spacing, virt_spacing, page_padding)
    hori_spacing = hori_spacing or 0.1
    virt_spacing = virt_spacing or 0.1
    page_padding = page_padding or 0.5
@@ -97,3 +97,4 @@ end
 
 
 return formspec_builder
+
