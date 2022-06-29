@@ -1005,17 +1005,64 @@ minetest.register_on_newplayer(function(ObjectRef)
    playerInventory:set_stack(playerInventoryName, 1, idCardStack)
 end)
 
-minetest.register_entity("spacestation:locker3d_base", {
+local function from_pixels(points, unit_size)
+   unit_size = (unit_size or 16) + 0.0
+   local newTable = {}
+   for k, v in pairs(points) do
+      newTable[k] = v / unit_size
+   end
+   return newTable
+end
+
+minetest.register_entity("spacestation:locker3d_body", {
    initial_properties  = {
       visual = "mesh",
       mesh = "spacestation_locker_body.obj",
       textures = {"spacestation_locker.png"},
       physical = true,
+      pointable = true,
       collide_with_objects = true,
-      collisionbox = { -0.5, -0.5, -0.5, 0.5, 1.5, 0.5},
-      visual_size = {x = 10, y = 10, z = 10}, -- Why is this nessary
-   }
+      collisionbox = from_pixels({-8, -8, -8, 8, 24, 8}),
+      selectionbox = from_pixels({-7, -8, -8, 8, 24, 8}),
+      visual_size = {x = 10, y = 10, z = 10}, -- TODO: size locker correctly
+   },
+   on_death = function(self, killer)
+      print("locker kill")
+   end,
+   on_rightclick = function(self, clicker)
+      print("body Right click")
+   end,
+   
 })
+
+minetest.register_entity("spacestation:locker3d_door", {
+   initial_properties  = {
+      visual = "mesh",
+      mesh = "spacestation_locker_door.obj",
+      textures = {"spacestation_locker.png"},
+      physical = false,
+      pointable = true,
+      collide_with_objects = false,
+      selectionbox = from_pixels({-8, -7, -7 ,-7, 23, 7}),
+   },
+   on_detach = function(self, parent)
+      self.object:remove()
+   end,
+   on_rightclick = function(self, clicker)
+      print("door Right click")
+      print("yaw:", self.object:get_yaw())
+      self.object:set_yaw(80 * 3.14 / 180.0)
+   end,
+
+})
+
+local function make_locker3d(pos)
+   local body_object = minetest.add_entity(pos, "spacestation:locker3d_body", nil)
+   local door_object = minetest.add_entity(pos, "spacestation:locker3d_door", nil)
+   door_object:set_attach(body_object, "", {x = 0, y = 0, z = 0}, nil, true)
+   
+   return body_object
+end
 
 
 minetest.register_craftitem("spacestation:locker3d_spawner", {
@@ -1025,7 +1072,7 @@ minetest.register_craftitem("spacestation:locker3d_spawner", {
       if pointed_thing.type == "node" then
          local pos = pointed_thing.above
          
-         local obj = minetest.add_entity(pos, "spacestation:locker3d_base", nil)
+         local obj = make_locker3d(pos)
          
          itemstack:set_count(itemstack:get_count() - 1)
          return itemstack
