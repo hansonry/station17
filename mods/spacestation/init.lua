@@ -1057,7 +1057,6 @@ minetest.register_entity("spacestation:locker3d_body", {
       collide_with_objects = true,
       collisionbox = from_pixels({-8, -8, -8, 8, 23.5, 8}),
       selectionbox = from_pixels({-7, -8, -8, 8, 24,   8}),
-      visual_size = {x = 10, y = 10, z = 10}, -- TODO: size locker correctly
    },
    
    _is_open = false,
