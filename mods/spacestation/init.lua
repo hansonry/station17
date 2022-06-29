@@ -1016,6 +1016,26 @@ end
 
 local tau = math.pi * 2
 
+local function round(value)
+   return math.floor(value + 0.5)
+end
+
+local function rad_diff(a, b)
+   
+   local _, a_part = math.modf(a / tau)
+   local _, b_part = math.modf(b / tau)
+
+   local diff = a_part - b_part
+   if diff > 0.5 then 
+      diff = diff - 1
+   elseif diff < -0.5 then
+      diff = diff + 1
+   end
+   
+   --print("Parts", a_part, b_part, diff)
+   return diff * tau
+end
+
 minetest.register_entity("spacestation:locker3d_body", {
    initial_properties  = {
       visual = "mesh",
@@ -1050,6 +1070,42 @@ minetest.register_entity("spacestation:locker3d_body", {
          print("Now Let go")
          self._dragged_by = ""
          self.object:set_velocity(vector.new(0, 0, 0))
+         
+         -- Snap 
+         local function is_rad_within(ang1, ang2, theta)
+            theta = theta or 0.001
+            local diff = rad_diff(ang1, ang2)
+            return math.abs(diff) < theta
+         end
+         
+         local pos = self.object:get_pos()
+         local rounded_vec = vector.new(
+            round(pos.x),
+            round(pos.y),
+            round(pos.z)
+         )
+         local diff = vector.subtract(rounded_vec, pos)
+         local dist = vector.length(diff)
+         local angles = {0, math.pi* 1/2, math.pi, math.pi * 3 / 2}
+          
+         if dist < 0.2 then
+            local entity_angle = self.object:get_yaw()
+            local snap = false
+            local angle = 0
+            for i,v in ipairs(angles) do
+               if is_rad_within(v, entity_angle, 0.35) then
+                  snap = true
+                  angle = v
+                  break
+               end
+            end
+            
+            if snap then
+               print("Snap!")
+               self.object:set_pos(rounded_vec)
+               self.object:set_yaw(angle)
+            end
+         end
       end
    end,
    on_step = function(self, dtime, moveresult)
@@ -1074,21 +1130,7 @@ minetest.register_entity("spacestation:locker3d_body", {
          self.object:set_velocity(velocity)
          
          -- Update rotation
-         local function rad_diff(a, b)
-            
-            local _, a_part = math.modf(a / tau)
-            local _, b_part = math.modf(b / tau)
 
-            local diff = a_part - b_part
-            if diff > 0.5 then 
-               diff = diff - 1
-            elseif diff < -0.5 then
-               diff = diff + 1
-            end
-            
-            --print("Parts", a_part, b_part, diff)
-            return diff * tau
-         end
          local player_yaw = player:get_look_horizontal() + math.pi / 2
          local yaw = self.object:get_yaw()
          local diff = rad_diff(player_yaw, yaw)
