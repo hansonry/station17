@@ -18,7 +18,9 @@ local creative_inv = [[
 	]]
 
 local spacestation_theme_inv = [[
+      image[0,5.2;1,1;spacestation_inv_backpack.png]
       list[current_player;backpack;0,5.2;1,1;]
+      image[1,5.2;1,1;spacestation_inv_idcard.png]
       list[current_player;idcard;1,5.2;1,1;]
       list[current_player;main;3,5.2;2,1;]
    ]]
