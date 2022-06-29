@@ -1026,11 +1026,50 @@ minetest.register_entity("spacestation:locker3d_body", {
       selectionbox = from_pixels({-7, -8, -8, 8, 24, 8}),
       visual_size = {x = 10, y = 10, z = 10}, -- TODO: size locker correctly
    },
+   
+   _is_open = false,
+   _is_broken = false,
+   _is_locked = false,
+   _lock = "",
+
    on_death = function(self, killer)
       print("locker kill")
    end,
    on_rightclick = function(self, clicker)
       print("body Right click")
+   end,
+   on_detach_child = function(self, child)
+      print("Child detached from door body. Assuming broken")
+      self._is_broken = true
+   end,
+   get_staticdata = function(self)
+      return minetest.write_json({
+         is_open = self._is_open,
+         is_broken = self._is_broken,
+         lock = self._lock,
+         is_locked = self._is_locked
+      })
+   end,
+   on_activate = function(self, staticdata, dtime_s)
+      if staticdata ~= "" and staticdata ~= nil then
+         local data = minetest.parse_json(staticdata) or {}
+         self._is_open = data.is_open
+         self._is_broken = data.is_broken
+         self._lock = data.lock
+         self._is_locked = data.is_locked
+      end
+      local children = self.object:get_children()
+      if self._is_broken then
+         for i,v in ipairs(children) do
+            v:remove()
+         end
+      else
+         if #children == 0 then
+            print("Adding Door Child")
+            local door_object = minetest.add_entity(self.object:get_pos(), "spacestation:locker3d_door", "dont_die")
+            door_object:set_attach(self.object, "", {x = 0, y = 0, z = 0}, nil, true)
+         end
+      end
    end,
    
 })
@@ -1045,21 +1084,25 @@ minetest.register_entity("spacestation:locker3d_door", {
       collide_with_objects = false,
       selectionbox = from_pixels({-8, -7, -7 ,-7, 23, 7}),
    },
+   on_activate = function(self, staticdata, dtime_s)
+      if staticdata ~= "dont_die" then
+         -- Loaded in without parent. Killing self
+         self.object:remove()
+      end
+   end,
    on_detach = function(self, parent)
       self.object:remove()
    end,
    on_rightclick = function(self, clicker)
       print("door Right click")
-      print("yaw:", self.object:get_yaw())
-      self.object:set_yaw(80 * 3.14 / 180.0)
    end,
 
 })
 
 local function make_locker3d(pos)
    local body_object = minetest.add_entity(pos, "spacestation:locker3d_body", nil)
-   local door_object = minetest.add_entity(pos, "spacestation:locker3d_door", nil)
-   door_object:set_attach(body_object, "", {x = 0, y = 0, z = 0}, nil, true)
+   --local door_object = minetest.add_entity(pos, "spacestation:locker3d_door", nil)
+   --door_object:set_attach(body_object, "", {x = 0, y = 0, z = 0}, nil, true)
    
    return body_object
 end
