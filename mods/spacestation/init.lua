@@ -35,6 +35,7 @@ spacestation.theme_inv = spacestation_theme_inv
 dofile(spacestation_path .. "/mapgen.lua")
 dofile(spacestation_path .. "/skybox.lua")
 dofile(spacestation_path .. "/inventory.lua")
+dofile(spacestation_path .. "/jobs_and_access.lua")
 local inv_serializer   = dofile(spacestation_path .. "/inventory_serializer.lua")
 local formspec_builder = dofile(spacestation_path .. "/formspec_builder.lua")
 
@@ -436,7 +437,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
    context.formspec = nil
    
    local function check_for_access_button()
-      for i,v in ipairs(access_ordered) do
+      for i,v in ipairs(spacestation.access_ordered) do
          if fields[v.name] ~= nil then
             return v
          end
@@ -487,7 +488,7 @@ minetest.register_craftitem("spacestation:programmer", {
             local line_size = 0
             max_line_size = max_line_size or 15
             button_type = button_type or "button"
-            for i,v in ipairs(access_ordered) do
+            for i,v in ipairs(spacestation.access_ordered) do
                local size = (#v.name) * 0.2
                table.insert(buttons, {button_type, size, v.name, v.name})
                line_size = line_size + size
@@ -570,7 +571,7 @@ local function computer_idcard_build_formspec(inventory)
       local line_size = 0
       max_line_size = max_line_size or 15
       button_type = button_type or "button"
-      for i,v in ipairs(jobs_ordered) do
+      for i,v in ipairs(spacestation.jobs_ordered) do
          local size = (#v.name) * 0.2
          table.insert(buttons, {button_type, size, v.name, v.name})
          line_size = line_size + size
@@ -599,7 +600,7 @@ local function computer_idcard_build_formspec(inventory)
          end
          return false
       end
-      for i,v in ipairs(access_ordered) do
+      for i,v in ipairs(spacestation.access_ordered) do
          local size = (#v.name) * 0.15 + 0.3
          local hasAccess = has_access(v)
          table.insert(checkboxs, {"checkbox", size, v.name, v.name, hasAccess})
@@ -731,7 +732,7 @@ minetest.register_node("spacestation:computer_idcard", {
 
 
       local function check_for_button()
-         for i,v in ipairs(jobs_ordered) do
+         for i,v in ipairs(spacestaion.jobs_ordered) do
             if fields[v.name] ~= nil then
                return v
             end
@@ -740,7 +741,7 @@ minetest.register_node("spacestation:computer_idcard", {
       end
       
       local function check_for_checkbox()
-         for i,v in ipairs(access_ordered) do
+         for i,v in ipairs(spacestaion.access_ordered) do
             if fields[v.name] ~= nil then
                return v
             end

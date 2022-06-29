@@ -214,10 +214,10 @@ local jobs_ordered = {
 }
 local jobs = make_table_using_key(jobs_ordered, "name")
 
-spacestation.jobs_ordered   = jobs_ordered,
-spacestation.jobs           = jobs,
-spacestation.access_ordered = access_ordered,
-spacestation.access         = access,
+spacestation.jobs_ordered   = jobs_ordered
+spacestation.jobs           = jobs
+spacestation.access_ordered = access_ordered
+spacestation.access         = access
 
 
 
