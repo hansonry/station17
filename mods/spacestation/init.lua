@@ -1201,8 +1201,9 @@ minetest.register_entity("spacestation:locker3d_body", {
 minetest.register_entity("spacestation:locker3d_door", {
    initial_properties  = {
       visual = "mesh",
-      mesh = "spacestation_locker_door.obj",
+      mesh = "spacestation_locker_door.x",
       textures = {"spacestation_locker.png"},
+      visual_size = {x = 10, y = 10, z = 10},
       physical = false,
       pointable = true,
       collide_with_objects = false,
@@ -1219,6 +1220,10 @@ minetest.register_entity("spacestation:locker3d_door", {
    end,
    on_rightclick = function(self, clicker)
       print("door Right click")
+      --self.object:set_pos(self.object:get_pos())
+      --self.object:set_detach()
+      -- I give up here
+      self.object:set_animation({x=1, y=20}, 15, 0, false)
    end,
 
 })
