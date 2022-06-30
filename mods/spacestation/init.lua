@@ -732,7 +732,7 @@ minetest.register_node("spacestation:computer_idcard", {
 
 
       local function check_for_button()
-         for i,v in ipairs(spacestaion.jobs_ordered) do
+         for i,v in ipairs(spacestation.jobs_ordered) do
             if fields[v.name] ~= nil then
                return v
             end
@@ -741,7 +741,7 @@ minetest.register_node("spacestation:computer_idcard", {
       end
       
       local function check_for_checkbox()
-         for i,v in ipairs(spacestaion.access_ordered) do
+         for i,v in ipairs(spacestation.access_ordered) do
             if fields[v.name] ~= nil then
                return v
             end
