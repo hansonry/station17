@@ -1047,6 +1047,10 @@ local function rad_diff(a, b)
    return diff * tau
 end
 
+local locker_door_offset    = {x = -5, y = 0,   z = 4.357}
+local locker_door_rot_close = {x =  0, y = 0,   z = 0}
+local locker_door_rot_open  = {x =  0, y = 100, z = 0}
+
 minetest.register_entity("spacestation:locker3d_body", {
    initial_properties  = {
       visual = "mesh",
@@ -1066,6 +1070,72 @@ minetest.register_entity("spacestation:locker3d_body", {
    _dragged_by = "",
    _dragged_distance = 0,
 
+   is_dragging = function(self)
+      return self._dragged_by ~= ""
+   end,
+   stop_dragging = function(self)
+      print("Now Let go")
+      self._dragged_by = ""
+      self.object:set_velocity(vector.new(0, 0, 0))
+      
+      -- Snap 
+      local function is_rad_within(ang1, ang2, theta)
+         theta = theta or 0.001
+         local diff = rad_diff(ang1, ang2)
+         return math.abs(diff) < theta
+      end
+      
+      local pos = self.object:get_pos()
+      local rounded_vec = vector.new(
+         round(pos.x),
+         round(pos.y),
+         round(pos.z)
+      )
+      local diff = vector.subtract(rounded_vec, pos)
+      local dist = vector.length(diff)
+      local angles = {0, math.pi* 1/2, math.pi, math.pi * 3 / 2}
+       
+      if dist < 0.2 then
+         local entity_angle = self.object:get_yaw()
+         local snap = false
+         local angle = 0
+         for i,v in ipairs(angles) do
+            if is_rad_within(v, entity_angle, 0.35) then
+               snap = true
+               angle = v
+               break
+            end
+         end
+         
+         if snap then
+            print("Snap!")
+            self.object:set_pos(rounded_vec)
+            self.object:set_yaw(angle)
+         end
+      end
+   end,
+
+   toggle_is_open = function(self)
+      if self:is_dragging() then
+         -- So if soneone clicks on the door while dragging we should stop
+         -- instead of changing states
+         self:stop_dragging()
+      else
+         self:set_is_open(not self._is_open)
+      end
+   end,
+   set_is_open = function(self, is_open)
+      local rot = locker_door_rot_close
+      if is_open then
+         rot = locker_door_rot_open
+      end
+      local children = self.object:get_children()
+      for i,v in ipairs(children) do
+         v:set_attach(self.object, "", locker_door_offset, rot, true)
+      end
+      self._is_open = is_open
+   end,
+
    on_death = function(self, killer)
       print("locker kill")
    end,
@@ -1080,45 +1150,7 @@ minetest.register_entity("spacestation:locker3d_body", {
             self._dragged_by = clicker:get_player_name()
          end
       elseif self._dragged_by == clicker:get_player_name() then
-         print("Now Let go")
-         self._dragged_by = ""
-         self.object:set_velocity(vector.new(0, 0, 0))
-         
-         -- Snap 
-         local function is_rad_within(ang1, ang2, theta)
-            theta = theta or 0.001
-            local diff = rad_diff(ang1, ang2)
-            return math.abs(diff) < theta
-         end
-         
-         local pos = self.object:get_pos()
-         local rounded_vec = vector.new(
-            round(pos.x),
-            round(pos.y),
-            round(pos.z)
-         )
-         local diff = vector.subtract(rounded_vec, pos)
-         local dist = vector.length(diff)
-         local angles = {0, math.pi* 1/2, math.pi, math.pi * 3 / 2}
-          
-         if dist < 0.2 then
-            local entity_angle = self.object:get_yaw()
-            local snap = false
-            local angle = 0
-            for i,v in ipairs(angles) do
-               if is_rad_within(v, entity_angle, 0.35) then
-                  snap = true
-                  angle = v
-                  break
-               end
-            end
-            
-            if snap then
-               print("Snap!")
-               self.object:set_pos(rounded_vec)
-               self.object:set_yaw(angle)
-            end
-         end
+         self:stop_dragging()
       end
    end,
    on_step = function(self, dtime, moveresult)
@@ -1191,7 +1223,7 @@ minetest.register_entity("spacestation:locker3d_body", {
          if #children == 0 then
             print("Adding Door Child")
             local door_object = minetest.add_entity(self.object:get_pos(), "spacestation:locker3d_door", "dont_die")
-            door_object:set_attach(self.object, "", {x = 0, y = 0, z = 0}, nil, true)
+            door_object:set_attach(self.object, "", locker_door_offset, locker_door_rot_close, true)
          end
       end
    end,
@@ -1206,7 +1238,7 @@ minetest.register_entity("spacestation:locker3d_door", {
       physical = false,
       pointable = true,
       collide_with_objects = false,
-      selectionbox = from_pixels({-8, -7, -7 ,-7, 23, 7}),
+      selectionbox = from_pixels({-1, -7, -14 ,0, 23, 0}),
    },
    on_activate = function(self, staticdata, dtime_s)
       if staticdata ~= "dont_die" then
@@ -1219,6 +1251,9 @@ minetest.register_entity("spacestation:locker3d_door", {
    end,
    on_rightclick = function(self, clicker)
       print("door Right click")
+      local parent = self.object:get_attach()
+      local parentlua = parent:get_luaentity()
+      parentlua:toggle_is_open(true)
    end,
 
 })
