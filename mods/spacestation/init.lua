@@ -1222,8 +1222,12 @@ minetest.register_entity("spacestation:locker3d_body", {
       else
          if #children == 0 then
             print("Adding Door Child")
+            local rot = locker_door_rot_close
+            if self._is_open then
+               rot = locker_door_rot_open
+            end
             local door_object = minetest.add_entity(self.object:get_pos(), "spacestation:locker3d_door", "dont_die")
-            door_object:set_attach(self.object, "", locker_door_offset, locker_door_rot_close, true)
+            door_object:set_attach(self.object, "", locker_door_offset, rot, true)
          end
       end
    end,
