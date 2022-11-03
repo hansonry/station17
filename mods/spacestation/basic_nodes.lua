@@ -4,7 +4,7 @@ minetest.register_node("spacestation:floor", {
 	description = "Space Station Floor",
 	tiles = {"spacestation_floor.png"},
 	groups = {pryable = 1, cracky = 3},
-	sounds = default.node_sound_metal_defaults(),
+	sounds = default.node_sound_wood_defaults(),
 })
 
 minetest.register_node("spacestation:wall", {
