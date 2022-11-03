@@ -1001,7 +1001,9 @@ end
 minetest.register_on_newplayer(function(ObjectRef)
    local playerInventory = ObjectRef:get_inventory()
    local playerInventoryName = ObjectRef:get_wield_list()
-   local idCardStack = create_id_card_stack("Bob Ross", jobs.captain.name, jobs.captain.permissions)
+   local idCardStack = create_id_card_stack("Bob Ross", 
+                                            spacestation.jobs.captain.name, 
+                                            spacestation.jobs.captain.permissions)
    playerInventory:set_stack(playerInventoryName, 1, idCardStack)
 end)
 
