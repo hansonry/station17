@@ -34,6 +34,7 @@ spacestation.theme_inv = spacestation_theme_inv
 
 dofile(spacestation_path .. "/mapgen.lua")
 dofile(spacestation_path .. "/basic_nodes.lua")
+dofile(spacestation_path .. "/electronics.lua")
 dofile(spacestation_path .. "/skybox.lua")
 dofile(spacestation_path .. "/inventory.lua")
 dofile(spacestation_path .. "/jobs_and_access.lua")
