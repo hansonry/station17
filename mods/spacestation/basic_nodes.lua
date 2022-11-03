@@ -30,7 +30,7 @@ minetest.register_node("spacestation:hull", {
 
 minetest.register_node("spacestation:frame", {
 	description = "Space Station Frame",
-   drawtype = "allfaces",
+   drawtype = "allfaces_optional",
 	tiles = {"spacestation_frame.png"},
 	groups = {cracky=3},
 	drop = { items = {items = {'spacestation:metalrod', 'spacestation:metalrod'} } },
