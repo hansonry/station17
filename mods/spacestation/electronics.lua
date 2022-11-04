@@ -18,3 +18,43 @@ minetest.register_node("spacestation:apc", {
 		type = "wallmounted",
 	},
 })
+
+local node_size = 0.5
+local function MakeWireBoxes(node_size, wire_percent)
+   local boxes = {}
+   local unit = node_size * wire_percent
+   local u = unit
+   local n = node_size
+   boxes.center  = { -u, -u, -u,  u,  u,  u }
+   boxes.top     = { -u,  u, -u,  u,  n,  u }
+   boxes.bottom  = { -u, -n, -u,  u, -u,  u }
+   boxes.left    = { -n, -u, -u, -u,  u,  u }
+   boxes.right   = {  u, -u, -u,  n,  u,  u }
+   boxes.front   = { -u, -u, -n,  u,  u, -u }
+   boxes.back    = { -u, -u,  u,  u,  u,  n }
+   return boxes
+end
+
+local wire_boxes = MakeWireBoxes(node_size, 0.25);
+
+minetest.register_node("spacestation:wirelv", {
+	description = "Low Voltage Wire",
+   drawtype = "nodebox",
+	node_box = {
+		type = "fixed",
+		fixed = {
+			wire_boxes.center, 
+         wire_boxes.top, 
+         wire_boxes.bottom,
+         wire_boxes.left,
+         wire_boxes.right,
+         wire_boxes.front,
+         wire_boxes.back
+		},
+	},
+   paramtype = "light",
+   tiles = {"spacestation_uvgrid.png"},
+   sunlight_propagates = true,
+	groups = {cracky=3},
+	sounds = default.node_sound_wood_defaults(),
+})
