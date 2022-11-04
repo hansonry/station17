@@ -58,3 +58,18 @@ minetest.register_node("spacestation:wirelv", {
 	groups = {cracky=3},
 	sounds = default.node_sound_wood_defaults(),
 })
+
+minetest.register_node("spacestation:electricsource", {
+	description = "Space Station Power Source",
+	tiles = {"spacestation_electric_source.png"},
+	groups = {cracky = 3},
+	sounds = default.node_sound_wood_defaults(),
+})
+
+minetest.register_node("spacestation:electricload", {
+	description = "Space Station Power Load",
+	tiles = {"spacestation_electric_load.png"},
+	groups = {cracky = 3},
+	sounds = default.node_sound_wood_defaults(),
+})
+
