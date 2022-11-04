@@ -41,35 +41,36 @@ minetest.register_node("spacestation:wirelv", {
 	description = "Low Voltage Wire",
    drawtype = "nodebox",
 	node_box = {
-		type = "fixed",
+		type = "connected",
 		fixed = {
-			wire_boxes.center, 
-         wire_boxes.top, 
-         wire_boxes.bottom,
-         wire_boxes.left,
-         wire_boxes.right,
-         wire_boxes.front,
-         wire_boxes.back
+			wire_boxes.center
 		},
+      connect_top    = wire_boxes.top, 
+      connect_bottom = wire_boxes.bottom,
+      connect_left   = wire_boxes.left,
+      connect_right  = wire_boxes.right,
+      connect_front  = wire_boxes.front,
+      connect_back   = wire_boxes.back
 	},
+   connects_to = { "group:wirelv" },
    paramtype = "light",
    tiles = {"spacestation_uvgrid.png"},
    sunlight_propagates = true,
-	groups = {cracky=3},
+	groups = {cracky=3, wirelv=1 },
 	sounds = default.node_sound_wood_defaults(),
 })
 
 minetest.register_node("spacestation:electricsource", {
-	description = "Space Station Power Source",
+	description = "Space Station Power Source (Testing)",
 	tiles = {"spacestation_electric_source.png"},
-	groups = {cracky = 3},
+	groups = {cracky = 3, wirelv=1, wiremv=1, wirehv=1},
 	sounds = default.node_sound_wood_defaults(),
 })
 
 minetest.register_node("spacestation:electricload", {
-	description = "Space Station Power Load",
+	description = "Space Station Power Load (Testing)",
 	tiles = {"spacestation_electric_load.png"},
-	groups = {cracky = 3},
+	groups = {cracky = 3, wirelv=1, wiremv=1, wirehv=1},
 	sounds = default.node_sound_wood_defaults(),
 })
 
