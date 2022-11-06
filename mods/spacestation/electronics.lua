@@ -1,4 +1,11 @@
 
+-- High level requirements
+
+-- 1. Powered devices shall be set to an unpowered state if they lack power
+-- 2. Powered devices shall be set to a powered state if they have power.
+-- 3. Power shall be piped to powered devices though a wire network.
+-- 4. The wire network should be measureable at any point along the wire.
+
 
 -- Wire Networks
 
