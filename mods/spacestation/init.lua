@@ -962,12 +962,16 @@ minetest.register_on_newplayer(function(ObjectRef)
    playerInventory:set_stack(playerInventoryName, 1, idCardStack)
 end)
 
-local function from_pixels(points, unit_size)
+local function from_pixels(points, rotate, unit_size)
+   if rotate == nil then
+      rotate = false
+   end
    unit_size = (unit_size or 16) + 0.0
    local newTable = {}
    for k, v in pairs(points) do
       newTable[k] = v / unit_size
    end
+   newTable.rotate = rotate
    return newTable
 end
 
@@ -1017,7 +1021,7 @@ minetest.register_entity("spacestation:locker3d_body", {
       pointable = true,
       collide_with_objects = true,
       collisionbox = from_pixels({-8, -8, -8, 8, 23.5, 8}),
-      selectionbox = from_pixels({-7, -8, -8, 8, 24,   8}),
+      selectionbox = from_pixels({-7, -8, -8, 8, 24,   8}, true),
    },
    
    _is_open = false,
@@ -1199,7 +1203,7 @@ minetest.register_entity("spacestation:locker3d_door", {
       physical = false,
       pointable = true,
       collide_with_objects = false,
-      selectionbox = from_pixels({-1, -7, -14 ,0, 23, 0}),
+      selectionbox = from_pixels({-1, -7, -14 ,0, 23, 0}, true),
    },
    on_activate = function(self, staticdata, dtime_s)
       if staticdata ~= "dont_die" then
